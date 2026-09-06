@@ -2,21 +2,23 @@
 
 namespace App\Models;
 
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class PelakuUsaha extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    protected $table = 'pelaku_usaha';
+
     protected $fillable = [
-        'name',
+        'nama',
         'email',
-        'role',
         'password',
+        'nomor_telepon',
+        'status',
+        'email_verified_at',
     ];
 
     protected $hidden = [
@@ -32,13 +34,15 @@ class User extends Authenticatable
         ];
     }
 
-    public function isAdmin(): bool
+    public function klaimUsaha()
     {
-        return $this->role === 'admin';
+        return $this->hasMany(KlaimUsaha::class, 'pelaku_usaha_id');
     }
 
-    public function verifikasiKlaim()
+    public function umkmTerverifikasi()
     {
-        return $this->hasMany(KlaimUsaha::class, 'diverifikasi_oleh');
+        return $this->belongsToMany(Umkm::class, 'klaim_usaha', 'pelaku_usaha_id', 'umkm_id')
+            ->wherePivot('status', 'disetujui')
+            ->withTimestamps();
     }
 }
