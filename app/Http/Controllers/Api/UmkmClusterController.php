@@ -67,7 +67,8 @@ class UmkmClusterController extends Controller
             $maxLat = max($swLat, $neLat);
             $minLng = min($swLng, $neLng);
             $maxLng = max($swLng, $neLng);
-            $cacheParams['bbox'] = round($minLat, 2) . '_' . round($minLng, 2) . '_' . round($maxLat, 2) . '_' . round($maxLng, 2);
+            $precision = $zoom >= 14 ? 3 : 2;
+            $cacheParams['bbox'] = round($minLat, $precision) . '_' . round($minLng, $precision) . '_' . round($maxLat, $precision) . '_' . round($maxLng, $precision);
         } else {
             $cacheParams['bbox'] = 'all';
             $minLat = $maxLat = $minLng = $maxLng = null;
@@ -104,7 +105,9 @@ class UmkmClusterController extends Controller
             if ($gridSize === null) {
                 $points = $query->withCoordinates()
                     ->with('kategori:id,nama,icon')
-                    ->limit(2000)
+                    ->orderByDesc('rating')
+                    ->orderBy('id')
+                    ->limit(5000)
                     ->get()
                     ->map(function ($item) {
                         return [

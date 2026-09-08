@@ -11,12 +11,7 @@
         height: calc(100vh - 64px);
         min-height: 580px;
     }
-    .leaflet-marker-icon.custom-map-pin {
-        transition: transform 0.15s ease;
-    }
-    .leaflet-marker-icon.custom-map-pin:hover {
-        transform: scale(1.2);
-    }
+
     .sidebar-card-active {
         background-color: #ecfdf5;
         border-color: #10b981;
@@ -112,7 +107,8 @@
     }
     .kec-legend-item {
         cursor: pointer;
-        transition: background 0.15s;
+        will-change: background-color;
+        transition: background 0.15s ease, border-color 0.15s ease;
     }
     .kec-legend-item:hover {
         background: #f8fafc;
@@ -120,6 +116,49 @@
     .kec-legend-item.kec-active {
         background: #f0f9ff;
         border-color: #0284c7 !important;
+    }
+
+    /* PILAR B: GPU Layer Promotion & Smooth Marker Hover */
+    .custom-cluster-badge-icon .cluster-badge {
+        transform: translateZ(0);
+        backface-visibility: hidden;
+        will-change: transform, box-shadow;
+        transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    box-shadow 0.22s ease,
+                    opacity 0.18s ease;
+    }
+    /* Marker Pin untuk Titik Usaha Individual (Zoom >= 15 / Spiderfy) */
+    .custom-map-pin {
+        background: transparent !important;
+        border: none !important;
+    }
+    .custom-map-pin .map-pin-badge {
+        transform: translateZ(0);
+        backface-visibility: hidden;
+        transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    box-shadow 0.18s ease;
+    }
+    .custom-map-pin:hover .map-pin-badge {
+        transform: scale(1.25);
+        box-shadow: 0 6px 14px -1px rgba(0, 0, 0, 0.45) !important;
+    }
+    @keyframes kc-pulse-glow {
+        0%   { box-shadow: 0 0 0 0    rgba(52, 211, 153, 0.55); }
+        60%  { box-shadow: 0 0 0 14px rgba(52, 211, 153, 0);    }
+        100% { box-shadow: 0 0 0 0    rgba(52, 211, 153, 0);    }
+    }
+    .cluster-tier-huge {
+        animation: kc-pulse-glow 2.6s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    }
+
+    /* PILAR D: SVG Polygon & UI Transition */
+    .leaflet-pane.leaflet-overlay-pane svg path.leaflet-interactive {
+        transition: fill-opacity 0.22s ease-out,
+                    stroke-opacity 0.22s ease-out,
+                    stroke-width 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    #active-filter-banner {
+        transition: opacity 0.25s ease;
     }
 </style>
 @endpush
@@ -284,6 +323,17 @@
                 </div>
             </div>
 
+            <!-- Active Filter Banner -->
+            <div id="active-filter-banner" class="hidden px-3 py-2 bg-emerald-50 border-b border-emerald-200 justify-between items-center text-xs text-emerald-900 transition-all">
+                <span class="flex items-center gap-1.5 font-bold">
+                    <i class="fa-solid fa-filter text-emerald-600"></i>
+                    <span id="active-filter-text">Wilayah: Kec. Bengalon</span>
+                </span>
+                <button type="button" onclick="clearKecamatanFilter(true)" class="px-2 py-1 rounded-lg bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-900 font-bold text-[10px] transition flex items-center gap-1 shadow-sm" title="Kembali ke tampilan seluruh kecamatan">
+                    <i class="fa-solid fa-xmark"></i> Hapus Filter
+                </button>
+            </div>
+
             <!-- Dynamic Legend -->
             <div id="sidebar-legend" class="px-3 py-2 bg-white border-b border-slate-100 flex items-center gap-4 text-[10px] text-slate-500">
                 <div class="flex items-center gap-1.5">
@@ -367,6 +417,28 @@
     let debounceTimer;
     const markerRegistry = {};
     let currentLoadedData = null;
+    let _countAnimTimers = {};
+
+    function animateCount(elementId, targetValue, duration = 450) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        if (_countAnimTimers[elementId]) cancelAnimationFrame(_countAnimTimers[elementId]);
+        const startValue = parseInt(el.textContent.replace(/\D/g, '')) || 0;
+        if (startValue === targetValue) { el.textContent = targetValue.toLocaleString('id-ID'); return; }
+        const startTime = performance.now();
+        function tick(now) {
+            const progress = Math.min((now - startTime) / duration, 1);
+            const ease     = 1 - Math.pow(1 - progress, 3);
+            el.textContent = Math.round(startValue + (targetValue - startValue) * ease).toLocaleString('id-ID');
+            if (progress < 1) {
+                _countAnimTimers[elementId] = requestAnimationFrame(tick);
+            } else {
+                el.textContent = targetValue.toLocaleString('id-ID');
+                delete _countAnimTimers[elementId];
+            }
+        }
+        _countAnimTimers[elementId] = requestAnimationFrame(tick);
+    }
 
     const kecamatanCoords = @json($kecamatanCoords);
 
@@ -390,7 +462,7 @@
             maxBounds: kutimBounds,
             maxBoundsViscosity: 0.85,
             minZoom: 8,
-            maxZoom: 16,
+            maxZoom: 19,
             zoomSnap: 0.5,
         }).setView(initialCenter, initialZoom);
 
@@ -420,12 +492,80 @@
             chunkedLoading: true,
             chunkInterval: 100,
             chunkDelay: 10,
-            maxClusterRadius: 35,
+            maxClusterRadius: 28,
             disableClusteringAtZoom: 18,
             spiderfyOnMaxZoom: true,
             showCoverageOnHover: false,
             zoomToBoundsOnClick: true,
             animate: true,
+            spiderfyDistanceMultiplier: 1.6,
+        });
+
+        // Klik kluster langsung mekar (spiderfy) DAN buka Popup Profil UMKM di titik tersebut
+        markersCluster.on('clusterclick', function (c) {
+            const cluster = c.layer;
+            const markers = cluster.getAllChildMarkers();
+            const currentZoom = map.getZoom();
+            const bounds = cluster.getBounds();
+            const boundsZoom = map.getBoundsZoom(bounds);
+
+            // Selalu spiderfy agar cabang pin individual terlihat di peta
+            cluster.spiderfy();
+
+            // Tampilkan popup langsung memuat profil semua UMKM di kluster angka ini
+            if (markers.length > 0) {
+                let itemsHtml = '';
+                markers.forEach(function (m) {
+                    const item = m.umkmData;
+                    if (!item) return;
+
+                    const isVerif = item.status_klaim === 'terverifikasi';
+                    const badgeVerif = isVerif
+                        ? '<span style="color: #059669; font-weight: 700; font-size: 9px; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-circle-check"></i> Terverifikasi</span>'
+                        : '<span style="color: #d97706; font-weight: 700; font-size: 9px; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-shield-halved"></i> Data Lapangan</span>';
+
+                    itemsHtml += `
+                        <div style="padding: 8px; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0; margin-bottom: 6px;">
+                            <div style="font-size: 9px; font-weight: 800; text-transform: uppercase; color: #059669; margin-bottom: 2px;">
+                                ${item.kategori} &bull; ${item.kecamatan}
+                            </div>
+                            <div style="font-size: 12px; font-weight: 800; color: #0f172a; line-height: 1.2; margin-bottom: 3px;">
+                                ${item.nama}
+                            </div>
+                            <div style="font-size: 10px; color: #64748b; margin-bottom: 4px;">
+                                ${item.alamat || 'Kutai Timur'}
+                            </div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                                ${badgeVerif}
+                                <span style="font-size: 11px; color: #d97706; font-weight: 700;">
+                                    <i class="fa-solid fa-star"></i> ${item.rating}
+                                </span>
+                            </div>
+                            <a href="${item.url}" style="display: block; text-align: center; background: #059669; color: white; padding: 5px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-decoration: none;">
+                                Lihat Profil Usaha &rarr;
+                            </a>
+                        </div>
+                    `;
+                });
+
+                const clusterPopupHtml = `
+                    <div style="font-family: 'Plus Jakarta Sans', sans-serif; min-width: 250px; max-width: 320px; padding: 2px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid #e2e8f0;">
+                            <span style="font-size: 11px; font-weight: 800; color: #0f172a;">
+                                <i class="fa-solid fa-layer-group text-emerald-600 mr-1"></i> ${markers.length} UMKM di Titik Ini
+                            </span>
+                        </div>
+                        <div style="max-height: 250px; overflow-y: auto; padding-right: 2px;">
+                            ${itemsHtml}
+                        </div>
+                    </div>
+                `;
+
+                L.popup({ offset: [0, -10], closeButton: true, autoPan: true, autoPanPadding: [30, 30] })
+                    .setLatLng(cluster.getLatLng())
+                    .setContent(clusterPopupHtml)
+                    .openOn(map);
+            }
         });
         map.addLayer(markersCluster);
 
@@ -544,28 +684,12 @@
                             e.target.bringToFront();
                         },
                         mouseout: function (e) {
-                            if (highlightedKec !== name) {
+                            if (!highlightedKec || highlightedKec.toLowerCase() !== name.toLowerCase()) {
                                 kecamatanLayer.resetStyle(e.target);
                             }
                         },
                         click: function (e) {
-                            // Auto-filter kecamatan di dropdown
-                            const sel = document.getElementById('filter-kecamatan');
-                            if (sel) {
-                                for (let opt of sel.options) {
-                                    if (opt.text.toLowerCase().includes(name.toLowerCase()) ||
-                                        name.toLowerCase().includes(opt.text.toLowerCase())) {
-                                        sel.value = opt.value;
-                                        break;
-                                    }
-                                }
-                                triggerViewportUpdate();
-                            }
-                            // Highlight di legenda
-                            highlightedKec = name;
-                            document.querySelectorAll('.kec-legend-item').forEach(el => {
-                                el.classList.toggle('kec-active', el.dataset.kec === name);
-                            });
+                            highlightKecamatan(name, true);
                         },
                     });
                 },
@@ -611,8 +735,8 @@
                 html += `
                     <div class="kec-legend-item flex items-center gap-1.5 px-2 py-1 rounded-lg border border-transparent text-[10px] font-semibold text-slate-700"
                          data-kec="${name}"
-                         onclick="highlightKecamatan('${name.replace(/'/g, "\\'")}')"
-                         title="Klik untuk sorot wilayah">
+                         onclick="highlightKecamatan('${name.replace(/'/g, "\\'")}', true)"
+                         title="Klik untuk fokus ke wilayah ini (klik lagi untuk batal)">
                         <span class="w-3 h-3 rounded-sm flex-shrink-0" style="background:${col.fill}; border: 2px solid ${col.stroke};"></span>
                         <span class="truncate">${name}</span>
                     </div>
@@ -622,35 +746,99 @@
             panel.innerHTML = html || '<p class="text-[10px] text-slate-400 p-2">Memuat legenda...</p>';
         }
 
-        window.highlightKecamatan = function(name) {
+        function updateFilterBanner(kecName) {
+            const banner = document.getElementById('active-filter-banner');
+            const textEl = document.getElementById('active-filter-text');
+            if (!banner || !textEl) return;
+
+            if (kecName) {
+                textEl.textContent = `Wilayah: Kec. ${kecName}`;
+                banner.classList.remove('hidden');
+                banner.classList.add('flex');
+            } else {
+                banner.classList.add('hidden');
+                banner.classList.remove('flex');
+            }
+        }
+
+        window.clearKecamatanFilter = function(shouldFlyToOverview = false) {
+            highlightedKec = null;
+
+            const sel = document.getElementById('filter-kecamatan');
+            if (sel) sel.value = '';
+
+            if (kecamatanLayer) {
+                kecamatanLayer.eachLayer(l => kecamatanLayer.resetStyle(l));
+            }
+
+            document.querySelectorAll('.kec-legend-item').forEach(el => {
+                el.classList.remove('kec-active');
+            });
+
+            updateFilterBanner(null);
+
+            if (shouldFlyToOverview) {
+                map.flyTo(initialCenter, initialZoom, { duration: 1.1, easeLinearity: 0.25 });
+                setTimeout(triggerViewportUpdate, 1200);
+            }
+        };
+
+        window.highlightKecamatan = function(name, shouldZoom = true) {
             if (!kecamatanLayer) return;
+
+            // TOGGLE OFF: Jika kecamatan yang sama diklik lagi saat sudah aktif, batalkan filter
+            if (highlightedKec && highlightedKec.toLowerCase() === name.toLowerCase()) {
+                clearKecamatanFilter(true);
+                return;
+            }
+
             highlightedKec = name;
-            // Reset semua
-            kecamatanLayer.eachLayer(l => kecamatanLayer.resetStyle(l));
-            // Highlight target
+
+            // Reset semua polygon dan beri highlight khusus pada target
+            let targetLayer = null;
             kecamatanLayer.eachLayer(function(l) {
                 const n = l.feature?.properties?.kecamatan || l.feature?.properties?.name || '';
-                if (n === name) {
+                if (n.toLowerCase() === name.toLowerCase()) {
                     const col = getKecColor(name);
-                    l.setStyle({ weight: 4, fillOpacity: 0.28, color: col.stroke, dashArray: null });
+                    l.setStyle({ weight: 4, fillOpacity: 0.32, color: col.stroke, dashArray: null });
                     l.bringToFront();
+                    targetLayer = l;
+                } else {
+                    kecamatanLayer.resetStyle(l);
                 }
             });
-            // Update legenda highlight
+
+            // Update status aktif di legenda panel
             document.querySelectorAll('.kec-legend-item').forEach(el => {
-                el.classList.toggle('kec-active', el.dataset.kec === name);
+                el.classList.toggle('kec-active', (el.dataset.kec || '').toLowerCase() === name.toLowerCase());
             });
-            // Auto-filter kecamatan
+
+            // Sinkronkan ke dropdown kecamatan di toolbar filter
             const sel = document.getElementById('filter-kecamatan');
             if (sel) {
                 for (let opt of sel.options) {
-                    if (opt.text.toLowerCase().includes(name.toLowerCase()) ||
-                        name.toLowerCase().includes(opt.text.toLowerCase())) {
+                    if (opt.value && (opt.text.toLowerCase().includes(name.toLowerCase()) ||
+                        name.toLowerCase().includes(opt.text.toLowerCase()))) {
                         sel.value = opt.value;
                         break;
                     }
                 }
-                setTimeout(triggerViewportUpdate, 300);
+            }
+
+            // Tampilkan banner aktif
+            updateFilterBanner(name);
+
+            // Zoom / Pan langsung ke pusat kecamatan jika diminta
+            if (shouldZoom) {
+                if (kecamatanCoords && kecamatanCoords[name]) {
+                    const [lat, lng, z] = kecamatanCoords[name];
+                    map.flyTo([lat, lng], z || 12, { duration: 1.2, easeLinearity: 0.25 });
+                } else if (targetLayer && targetLayer.getBounds) {
+                    map.fitBounds(targetLayer.getBounds(), { padding: [30, 30], maxZoom: 13 });
+                }
+                setTimeout(triggerViewportUpdate, 1300);
+            } else {
+                triggerViewportUpdate();
             }
         };
 
@@ -672,9 +860,17 @@
             }
         }
 
+        let activeFetchController = null;
+        let latestFetchId = 0;
+
         // Fetch Data Kluster / Viewport dari Server
         async function muatDataViewport() {
-            if (isLoading) return;
+            if (activeFetchController) {
+                activeFetchController.abort();
+            }
+            activeFetchController = new AbortController();
+            const thisFetchId = ++latestFetchId;
+
             setLoading(true);
 
             const b = map.getBounds();
@@ -702,16 +898,25 @@
             if (statusKlaim) params.append('status_klaim', statusKlaim);
 
             try {
-                const response = await fetch(`/api/umkm/clusters?${params.toString()}`);
+                const response = await fetch(`/api/umkm/clusters?${params.toString()}`, {
+                    signal: activeFetchController.signal
+                });
                 if (!response.ok) throw new Error('Network error');
                 const result = await response.json();
+
+                // Abaikan jika request yang lebih baru telah diproses
+                if (thisFetchId !== latestFetchId) return;
 
                 currentLoadedData = result;
                 renderMapAndSidebar(result);
             } catch (err) {
-                console.error('Gagal memuat data kluster peta:', err);
+                if (err.name !== 'AbortError') {
+                    console.error('Gagal memuat data kluster peta:', err);
+                }
             } finally {
-                setLoading(false);
+                if (thisFetchId === latestFetchId) {
+                    setLoading(false);
+                }
             }
         }
 
@@ -733,9 +938,8 @@
             const sidebarSubtitle = document.getElementById('sidebar-subtitle');
             const sidebarLegend = document.getElementById('sidebar-legend');
             const statVisible = document.getElementById('stat-visible');
-
             if (statVisible) {
-                statVisible.textContent = (res.total_count ?? 0).toLocaleString('id-ID');
+                animateCount('stat-visible', res.total_count ?? 0);
             }
 
             if (!res.data || res.data.length === 0) {
@@ -857,7 +1061,7 @@
 
                     marker.bindPopup(popupContent);
                     marker.on('click', function () {
-                        map.flyTo([c.lat, c.lng], Math.min(map.getZoom() + 2, 16), { duration: 0.8 });
+                        map.flyTo([c.lat, c.lng], Math.min(map.getZoom() + 2, 18.5), { duration: 1.1, easeLinearity: 0.25 });
                     });
 
                     clusterLayerGroup.addLayer(marker);
@@ -866,7 +1070,7 @@
                     const percentVerif = c.count > 0 ? Math.round((c.terverifikasi_count / c.count) * 100) : 100;
                     sidebarHtml += `
                         <div class="cursor-pointer group hover:bg-slate-50 p-3 rounded-2xl transition border border-slate-100 hover:border-emerald-300 hover:shadow-sm"
-                             onclick="map.flyTo([${c.lat}, ${c.lng}], Math.min(map.getZoom() + 2, 16), { duration: 0.8 })"
+                             onclick="map.flyTo([${c.lat}, ${c.lng}], Math.min(map.getZoom() + 2, 18.5), { duration: 1.1, easeLinearity: 0.25 })"
                              data-count="${c.count}">
                             <div class="flex items-start justify-between gap-2 mb-1.5">
                                 <span class="text-xs font-extrabold text-slate-900 group-hover:text-emerald-700 transition flex items-center gap-1.5">
@@ -933,10 +1137,26 @@
                     const isVerified = item.status_klaim === 'terverifikasi';
                     const markerColor = isVerified ? '#059669' : '#d97706';
 
+                    // Ikon dinamis berdasarkan kategori dengan fallback fa-store
+                    let pinIcon = 'fa-store';
+                    if (item.icon) {
+                        const iconMap = {
+                            'utensils': 'fa-utensils',
+                            'palette': 'fa-palette',
+                            'shirt': 'fa-shirt',
+                            'sprout': 'fa-seedling',
+                            'fish': 'fa-fish',
+                            'briefcase': 'fa-briefcase',
+                            'shopping-bag': 'fa-bag-shopping',
+                            'heart-pulse': 'fa-heart-pulse'
+                        };
+                        pinIcon = iconMap[item.icon] || (item.icon.startsWith('fa-') ? item.icon : `fa-${item.icon}`);
+                    }
+
                     const customIcon = L.divIcon({
                         className: 'custom-map-pin',
-                        html: `<div style="background-color: ${markerColor}; width: 28px; height: 28px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px;">
-                            <i class="fa-solid fa-store"></i>
+                        html: `<div class="map-pin-badge" style="background-color: ${markerColor}; width: 28px; height: 28px; border-radius: 50%; border: 2.5px solid white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px;">
+                            <i class="fa-solid ${pinIcon}"></i>
                         </div>`,
                         iconSize: [28, 28],
                         iconAnchor: [14, 14],
@@ -967,6 +1187,7 @@
                     `;
 
                     marker.bindPopup(popupContent);
+                    marker.umkmData = item;
                     markersCluster.addLayer(marker);
                     markerRegistry[item.id] = marker;
 
@@ -999,7 +1220,7 @@
             heatLayer = L.heatLayer(heatPoints, {
                 radius: 35,
                 blur: 25,
-                maxZoom: 16,
+                maxZoom: 19,
                 minOpacity: 0.4,
                 gradient: { 0.1: '#064e3b', 0.3: '#047857', 0.5: '#f59e0b', 0.75: '#ef4444', 1.0: '#7f1d1d' }
             });
@@ -1008,7 +1229,7 @@
 
         // Global zoom helper for popup button
         window.zoomToCluster = function (lat, lng) {
-            map.flyTo([lat, lng], Math.min(map.getZoom() + 2, 16), { duration: 0.8 });
+            map.flyTo([lat, lng], Math.min(map.getZoom() + 2, 18.5), { duration: 1.1, easeLinearity: 0.25 });
         };
 
         // Debounce moveend (350ms)
@@ -1017,6 +1238,16 @@
             debounceTimer = setTimeout(muatDataViewport, 350);
         });
         map.on('zoomend', function () {
+            const currentZoom = map.getZoom();
+
+            // Auto-release kecamatan lock saat user zoom out ke overview Kutai Timur (zoom <= 9.5)
+            const selKec = document.getElementById('filter-kecamatan');
+            const hasKecFilter = highlightedKec || (selKec && selKec.value);
+
+            if (currentZoom <= 9.5 && hasKecFilter) {
+                clearKecamatanFilter(false);
+            }
+
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(muatDataViewport, 350);
             updateKecamatanLabelVisibility();
@@ -1110,23 +1341,20 @@
             );
         });
 
-        // Auto-pan saat dropdown kecamatan dipilih
+        // Auto-pan & highlight saat dropdown kecamatan dipilih
         const selectKecamatan = document.getElementById('filter-kecamatan');
         selectKecamatan.addEventListener('change', function () {
             const selected = this.value;
-            if (selected && kecamatanCoords[selected]) {
-                const [lat, lng, zoom] = kecamatanCoords[selected];
-                map.flyTo([lat, lng], zoom, { duration: 1.0, easeLinearity: 0.5 });
+            if (selected) {
+                highlightKecamatan(selected, true);
             } else {
-                map.flyTo(initialCenter, initialZoom, { duration: 1.0 });
+                clearKecamatanFilter(true);
             }
-            setTimeout(triggerViewportUpdate, 1200);
         });
 
-        // Reset view button
+        // Reset view button (kembali ke tampilan awal seluruh Kutai Timur)
         document.getElementById('btn-reset-view').addEventListener('click', function () {
-            map.flyTo(initialCenter, initialZoom, { duration: 0.8 });
-            setTimeout(triggerViewportUpdate, 1000);
+            clearKecamatanFilter(true);
         });
 
         // Filter event listeners
@@ -1137,7 +1365,7 @@
     // Helper fungsi klik sidebar berpindah ke marker
     window.panToMarker = function (lat, lng, id) {
         if (isHeatmapActive) {
-            map.flyTo([lat, lng], 16);
+            map.flyTo([lat, lng], 17.5, { duration: 1.0, easeLinearity: 0.25 });
             return;
         }
 
@@ -1147,18 +1375,16 @@
                 marker.openPopup();
             });
         } else {
-            map.flyTo([lat, lng], 16);
+            map.flyTo([lat, lng], 17.5, { duration: 1.0, easeLinearity: 0.25 });
         }
     };
 
-    // Helper reset filter
+    // Helper reset semua filter
     window.resetFilters = function () {
         document.getElementById('filter-q').value = '';
-        document.getElementById('filter-kecamatan').value = '';
         document.getElementById('filter-kategori').value = '';
         document.getElementById('filter-status').value = '';
-        map.flyTo(initialCenter, initialZoom, { duration: 0.8 });
-        setTimeout(triggerViewportUpdate, 900);
+        clearKecamatanFilter(true);
     };
 
 </script>
