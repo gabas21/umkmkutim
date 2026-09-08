@@ -178,69 +178,130 @@ class UmkmClusterController extends Controller
                 return $clusters;
             };
 
-            // Maximum UMKM per cluster before auto-splitting
+            // Maximum UMKM per cluster before auto-splitting at higher zoom levels
             $maxClusterCount = 2000;
 
             if ($isUnfiltered && \Illuminate\Support\Facades\Schema::hasTable('umkm_grid_cluster')) {
-                $gridQuery = DB::table('umkm_grid_cluster');
-                if ($zoom > 10 && $minLat !== null && $maxLat !== null && $minLng !== null && $maxLng !== null) {
-                    $gridQuery->whereBetween('grid_lat', [$minLat, $maxLat])
-                              ->whereBetween('grid_lng', [$minLng, $maxLng]);
-                }
-                if ($request->filled('kecamatan')) {
-                    $gridQuery->where('kecamatan', $request->kecamatan);
-                }
+                // Saat zoom <= 9 (tampilan seluruh Kabupaten Kutai Timur):
+                // Kelompokkan secara administratif per kecamatan agar tiap wilayah memiliki
+                // tepat 1 penanda kluster resmi di pusat geografisnya, tanpa tumpang tindih.
+                if ($zoom <= 9 && !$request->filled('kecamatan')) {
+                    $kecRows = DB::table('umkm_grid_cluster')
+                        ->select(
+                            'kecamatan',
+                            DB::raw('SUM(jumlah_umkm) as total_umkm'),
+                            DB::raw('SUM(terverifikasi_count) as total_verif'),
+                            DB::raw('SUM(grid_lat * jumlah_umkm) / SUM(jumlah_umkm) as avg_lat'),
+                            DB::raw('SUM(grid_lng * jumlah_umkm) / SUM(jumlah_umkm) as avg_lng')
+                        )
+                        ->groupBy('kecamatan')
+                        ->get();
 
-                $gridData = $gridQuery->get();
-                $totalCount = (int) $gridData->sum('jumlah_umkm');
-
-                // Initial aggregation
-                $clusters = $aggregateCells($gridData->all(), $gridSize);
-
-                // Auto-split oversized clusters by halving grid size (up to 3 levels)
-                for ($split = 0; $split < 3; $split++) {
-                    $hasOversized = false;
-                    $newClusters = [];
-                    foreach ($clusters as $key => $c) {
-                        if ($c['count'] > $maxClusterCount && count($c['raw_cells']) > 1) {
-                            $hasOversized = true;
-                            // Re-aggregate this cluster's cells at half the grid size
-                            $subGridSize = $gridSize / pow(2, $split + 1);
-                            $subClusters = $aggregateCells($c['raw_cells'], $subGridSize);
-                            foreach ($subClusters as $sk => $sc) {
-                                $newClusters[$key . '_' . $sk] = $sc;
-                            }
-                        } else {
-                            $newClusters[$key] = $c;
-                        }
+                    $clusters = [];
+                    foreach ($kecRows as $r) {
+                        $count = (int) $r->total_umkm;
+                        $lat = (float) $r->avg_lat;
+                        $lng = (float) $r->avg_lng;
+                        $clusters[$r->kecamatan] = [
+                            'grid_lat' => $lat,
+                            'grid_lng' => $lng,
+                            'lat_sum'  => $lat * $count,
+                            'lng_sum'  => $lng * $count,
+                            'count'    => $count,
+                            'terverifikasi_count' => (int) $r->total_verif,
+                            'kecamatans' => [$r->kecamatan => $count],
+                            'raw_cells'  => [],
+                        ];
                     }
-                    $clusters = $newClusters;
-                    if (!$hasOversized) break;
+                    $totalCount = (int) $kecRows->sum('total_umkm');
+                } else {
+                    $gridQuery = DB::table('umkm_grid_cluster');
+                    if ($zoom > 10 && $minLat !== null && $maxLat !== null && $minLng !== null && $maxLng !== null) {
+                        $gridQuery->whereBetween('grid_lat', [$minLat, $maxLat])
+                                  ->whereBetween('grid_lng', [$minLng, $maxLng]);
+                    }
+                    if ($request->filled('kecamatan')) {
+                        $gridQuery->where('kecamatan', $request->kecamatan);
+                    }
+
+                    $gridData = $gridQuery->get();
+                    $totalCount = (int) $gridData->sum('jumlah_umkm');
+
+                    // Initial aggregation
+                    $clusters = $aggregateCells($gridData->all(), $gridSize);
+
+                    // Auto-split oversized clusters by halving grid size (up to 3 levels)
+                    for ($split = 0; $split < 3; $split++) {
+                        $hasOversized = false;
+                        $newClusters = [];
+                        foreach ($clusters as $key => $c) {
+                            if ($c['count'] > $maxClusterCount && count($c['raw_cells']) > 1) {
+                                $hasOversized = true;
+                                // Re-aggregate this cluster's cells at half the grid size
+                                $subGridSize = $gridSize / pow(2, $split + 1);
+                                $subClusters = $aggregateCells($c['raw_cells'], $subGridSize);
+                                foreach ($subClusters as $sk => $sc) {
+                                    $newClusters[$key . '_' . $sk] = $sc;
+                                }
+                            } else {
+                                $newClusters[$key] = $c;
+                            }
+                        }
+                        $clusters = $newClusters;
+                        if (!$hasOversized) break;
+                    }
                 }
             } else {
-                // PATCH: cap jumlah baris raw yang ditarik untuk clustering manual di PHP.
-                // Sebelumnya ->get() tanpa limit -- rawan menarik puluhan ribu baris
-                // sekaligus saat filter aktif tapi bbox lebar/kosong.
-                $rawPoints = $query->selectRaw("
-                    ST_Latitude(location) AS lat,
-                    ST_Longitude(location) AS lng,
-                    kecamatan,
-                    status_klaim
-                ")->limit(self::MAX_RAW_POINTS + 1)->get();
+                // Saat filter aktif dan zoom <= 9 tanpa bbox sempit:
+                // Agregasi langsung per kecamatan untuk performa super cepat
+                if ($zoom <= 9 && !$request->filled('kecamatan') && $minLat === null) {
+                    $kecPoints = $query->selectRaw("
+                        kecamatan,
+                        COUNT(*) as count,
+                        SUM(CASE WHEN status_klaim = 'terverifikasi' THEN 1 ELSE 0 END) as terverifikasi_count,
+                        AVG(ST_Latitude(location)) as avg_lat,
+                        AVG(ST_Longitude(location)) as avg_lng
+                    ")->groupBy('kecamatan')->get();
 
-                if ($rawPoints->count() > self::MAX_RAW_POINTS) {
-                    $truncated = true;
-                    $rawPoints = $rawPoints->take(self::MAX_RAW_POINTS);
-                }
+                    $totalCount = (int) $kecPoints->sum('count');
+                    $clusters = [];
+                    foreach ($kecPoints as $kp) {
+                        $cnt = (int) $kp->count;
+                        $lat = (float) $kp->avg_lat;
+                        $lng = (float) $kp->avg_lng;
+                        $clusters[$kp->kecamatan] = [
+                            'grid_lat' => $lat,
+                            'grid_lng' => $lng,
+                            'lat_sum'  => $lat * $cnt,
+                            'lng_sum'  => $lng * $cnt,
+                            'count'    => $cnt,
+                            'terverifikasi_count' => (int) $kp->terverifikasi_count,
+                            'kecamatans' => [$kp->kecamatan => $cnt],
+                        ];
+                    }
+                } else {
+                    // PATCH: cap jumlah baris raw yang ditarik untuk clustering manual di PHP.
+                    $rawPoints = $query->selectRaw("
+                        ST_Latitude(location) AS lat,
+                        ST_Longitude(location) AS lng,
+                        kecamatan,
+                        status_klaim
+                    ")->limit(self::MAX_RAW_POINTS + 1)->get();
 
-                $totalCount = $rawPoints->count();
-                $clusters = [];
+                    if ($rawPoints->count() > self::MAX_RAW_POINTS) {
+                        $truncated = true;
+                        $rawPoints = $rawPoints->take(self::MAX_RAW_POINTS);
+                    }
 
-                foreach ($rawPoints as $pt) {
-                    $lat = (float) $pt->lat;
-                    $lng = (float) $pt->lng;
+                    $totalCount = $rawPoints->count();
+                    $clusters = [];
 
-                    if (!$lat || !$lng) continue;
+                    foreach ($rawPoints as $pt) {
+                        $lat = (float) $pt->lat;
+                        $lng = (float) $pt->lng;
+
+                        if (!$lat || !$lng) continue;
+
 
                     $gridLat = round($lat / $gridSize) * $gridSize;
                     $gridLng = round($lng / $gridSize) * $gridSize;
@@ -271,6 +332,7 @@ class UmkmClusterController extends Controller
                     }
                 }
             }
+        }
 
             $clusterResults = [];
             foreach ($clusters as $c) {

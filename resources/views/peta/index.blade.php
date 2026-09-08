@@ -377,12 +377,12 @@
     );
 
     const totalUmkm = {{ $totalUmkm }};
+    const initialCenter = [0.85, 117.30];
+    const initialZoom = 8.5;
 
     document.addEventListener('DOMContentLoaded', function () {
-        const initialCenter = [0.65, 117.40];
-        const initialZoom = 9;
-
         map = L.map('full-interactive-map', {
+
             preferCanvas: true,
             zoomControl: true,
             zoomAnimation: true,
@@ -391,6 +391,7 @@
             maxBoundsViscosity: 0.85,
             minZoom: 8,
             maxZoom: 16,
+            zoomSnap: 0.5,
         }).setView(initialCenter, initialZoom);
 
         // ============================================================
@@ -813,30 +814,10 @@
                     const heatWeight = Math.min(Math.max(c.count / 2000, 0.4), 1.0);
                     heatPoints.push([c.lat, c.lng, heatWeight]);
 
-                    // Collision avoidance: nudge position if too close to existing badge
-                    let renderLat = c.lat;
-                    let renderLng = c.lng;
-                    const pt = map.latLngToContainerPoint([c.lat, c.lng]);
-                    const minGap = size * 0.7; // minimum pixel gap
+                    // Posisikan badge tepat pada koordinat geografis kluster/wilayah yang sebenarnya
+                    const renderLat = c.lat;
+                    const renderLng = c.lng;
 
-                    for (const prev of placedBadges) {
-                        const dx = pt.x - prev.x;
-                        const dy = pt.y - prev.y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        const needed = (size + prev.size) / 2 + minGap * 0.3;
-
-                        if (dist < needed && dist > 0) {
-                            // Push apart along the collision axis
-                            const pushPx = (needed - dist) * 0.6;
-                            const angle = Math.atan2(dy, dx);
-                            pt.x += Math.cos(angle) * pushPx;
-                            pt.y += Math.sin(angle) * pushPx;
-                            const nudged = map.containerPointToLatLng(pt);
-                            renderLat = nudged.lat;
-                            renderLng = nudged.lng;
-                        }
-                    }
-                    placedBadges.push({ x: pt.x, y: pt.y, size: size });
 
                     // Format kecamatan label: "Kec. X & Y" style
                     const kecLabel = c.kecamatan.includes(',')
@@ -1176,9 +1157,10 @@
         document.getElementById('filter-kecamatan').value = '';
         document.getElementById('filter-kategori').value = '';
         document.getElementById('filter-status').value = '';
-        map.flyTo([0.65, 117.40], 9, { duration: 0.8 });
+        map.flyTo(initialCenter, initialZoom, { duration: 0.8 });
         setTimeout(triggerViewportUpdate, 900);
     };
+
 </script>
 @endpush
 
