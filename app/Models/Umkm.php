@@ -83,13 +83,13 @@ class Umkm extends Model
 
     public function scopeWithCoordinates($query)
     {
-        return $query->selectRaw("umkm.*, ST_X(location) as longitude, ST_Y(location) as latitude");
+        return $query->selectRaw("umkm.*, ST_Latitude(location) as latitude, ST_Longitude(location) as longitude");
     }
 
     public function scopeNearby($query, $lat, $lng, $maxMeters = 10000)
     {
-        return $query->selectRaw("umkm.*, ST_X(location) as longitude, ST_Y(location) as latitude, ST_Distance_Sphere(location, ST_SRID(POINT(?, ?), 4326)) AS jarak_meter", [$lng, $lat])
-            ->whereRaw("ST_Distance_Sphere(location, ST_SRID(POINT(?, ?), 4326)) <= ?", [$lng, $lat, $maxMeters])
+        return $query->selectRaw("umkm.*, ST_Latitude(location) as latitude, ST_Longitude(location) as longitude, ST_Distance_Sphere(location, ST_SRID(POINT(?, ?), 4326)) AS jarak_meter", [$lat, $lng])
+            ->whereRaw("ST_Distance_Sphere(location, ST_SRID(POINT(?, ?), 4326)) <= ?", [$lat, $lng, $maxMeters])
             ->orderBy('jarak_meter');
     }
 

@@ -4,12 +4,21 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminKategoriController;
 use App\Http\Controllers\AdminUmkmController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Api\KecamatanBoundaryController;
+use App\Http\Controllers\Api\UmkmClusterController;
+use App\Http\Controllers\Api\UmkmMapController;
+use App\Http\Controllers\BazarController;
+use App\Http\Controllers\BazarPesertaController;
 use App\Http\Controllers\BeritaController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\KlaimController;
+use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\PelatihanController;
+use App\Http\Controllers\PelatihanPesertaController;
 use App\Http\Controllers\PelakuUsahaDashboardController;
 use App\Http\Controllers\PetaController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\UmkmController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +33,27 @@ Route::get('/umkm', [UmkmController::class, 'index'])->name('umkm.index');
 Route::get('/umkm/{slug}', [UmkmController::class, 'show'])->name('umkm.show');
 Route::post('/umkm/{slug}/review', [ReviewController::class, 'store'])->name('umkm.review.store');
 Route::get('/api/umkm/nearby', [UmkmController::class, 'nearby'])->name('api.umkm.nearby');
+Route::get('/api/umkm/viewport', [UmkmMapController::class, 'viewport'])->name('api.umkm.viewport');
+Route::get('/api/umkm/clusters', [UmkmClusterController::class, 'index'])->name('api.umkm.clusters');
+Route::get('/api/kutim/kecamatan-boundaries', [KecamatanBoundaryController::class, 'index'])->name('api.kutim.boundaries');
+
+
+// Modul Bazar & Expo
+Route::get('/bazar', [BazarController::class, 'index'])->name('bazar.index');
+Route::get('/bazar/{slug}', [BazarController::class, 'show'])->name('bazar.show');
+Route::post('/bazar/{slug}/daftar', [BazarPesertaController::class, 'store'])->name('bazar.daftar');
+
+// Modul Pelatihan & Pendampingan
+Route::get('/pelatihan', [PelatihanController::class, 'index'])->name('pelatihan.index');
+Route::get('/pelatihan/{slug}', [PelatihanController::class, 'show'])->name('pelatihan.show');
+Route::post('/pelatihan/{slug}/daftar', [PelatihanPesertaController::class, 'store'])->name('pelatihan.daftar');
+
+// Modul Laporan Transparansi Publik & Dashboard
+Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
+
+// Modul Survey Kepuasan Layanan
+Route::get('/survey', [SurveyController::class, 'create'])->name('survey.create');
+Route::post('/survey', [SurveyController::class, 'store'])->name('survey.store');
 
 Route::get('/berita', [BeritaController::class, 'index'])->name('berita.index');
 Route::get('/berita/{slug}', [BeritaController::class, 'show'])->name('berita.show');

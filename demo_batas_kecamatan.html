@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Batas 18 Kecamatan Kabupaten Kutai Timur — Leaflet.js</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #1e293b;
+            background: #0f172a;
+            overflow: hidden;
+        }
+
+        #header {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 14px;
+            padding: 12px 18px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            max-width: 420px;
+        }
+
+        #header h1 {
+            font-size: 15px;
+            font-weight: 800;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #header h1 span.badge {
+            font-size: 10px;
+            font-weight: 700;
+            background: #0284c7;
+            color: white;
+            padding: 2px 7px;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        #header p {
+            font-size: 11.5px;
+            color: #64748b;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        #map {
+            width: 100vw;
+            height: 100vh;
+            background: #f1f5f9;
+        }
+
+        /* Top-Right Info Box */
+        .info-panel {
+            padding: 12px 16px;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            min-width: 220px;
+            max-width: 280px;
+        }
+
+        .info-panel h4 {
+            margin: 0 0 4px;
+            color: #0f172a;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .info-panel .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+            color: #475569;
+        }
+
+        .info-panel .stat-val {
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        /* Bottom Interactive Legend */
+        .legend-panel {
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            border-radius: 14px;
+            padding: 12px;
+            max-height: 380px;
+            width: 240px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .legend-header {
+            font-size: 12px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .legend-header span.count {
+            font-size: 10px;
+            background: #e2e8f0;
+            color: #334155;
+            padding: 1px 6px;
+            border-radius: 9999px;
+        }
+
+        .legend-list {
+            overflow-y: auto;
+            max-height: 300px;
+            padding-right: 4px;
+        }
+
+        .legend-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .legend-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #334155;
+            padding: 4px 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .legend-item:hover {
+            background: #f1f5f9;
+            color: #0284c7;
+            transform: translateX(2px);
+        }
+
+        .legend-item.active {
+            background: #e0f2fe;
+            color: #0369a1;
+            font-weight: 700;
+        }
+
+        .legend-color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            flex-shrink: 0;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+        }
+
+        /* Permanent Centroid Labels */
+        .kec-label-permanent {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 11px;
+            font-weight: 800;
+            color: #0f172a;
+            text-shadow: 0 0 4px #ffffff, 0 0 8px #ffffff, 0 0 12px #ffffff;
+            white-space: nowrap;
+            pointer-events: none;
+            text-align: center;
+            letter-spacing: 0.02em;
+        }
+
+        /* Leaflet popup styling */
+        .leaflet-popup-content-wrapper {
+            border-radius: 14px;
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.2);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            padding: 4px;
+        }
+        .leaflet-popup-content {
+            margin: 10px 14px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="header">
+        <h1>Batas Kecamatan Kutai Timur <span class="badge">Resmi BIG / BPS</span></h1>
+        <p>Visualisasi 18 Polygon MultiPolygon batas wilayah administratif Kabupaten Kutai Timur terintegrasi dengan Leaflet.js.</p>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        // 1. Inisialisasi Peta
+        // Koordinat tengah Kabupaten Kutai Timur [latitude, longitude]
+        const KUTIM_CENTER = [0.85, 117.40];
+        const map = L.map('map', {
+            zoomControl: false,
+            attributionControl: true
+        }).setView(KUTIM_CENTER, 8);
+
+        // Zoom control di pojok kanan atas
+        L.control.zoom({ position: 'topright' }).addTo(map);
+
+        // 2. Tile Layer (OpenFreeMap / Carto Voyager)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a> | Batas: BIG / BPS',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+
+        // 3. Palet 18 Warna Kontras untuk 18 Kecamatan
+        const PALET_18_WARNA = {
+            'Sangatta Utara':   { border: '#1d4ed8', fill: '#3b82f6' },
+            'Sangatta Selatan': { border: '#0891b2', fill: '#06b6d4' },
+            'Bengalon':         { border: '#047857', fill: '#10b981' },
+            'Teluk Pandan':     { border: '#065f46', fill: '#059669' },
+            'Rantau Pulung':    { border: '#4d7c0f', fill: '#84cc16' },
+            'Muara Wahau':      { border: '#a16207', fill: '#eab308' },
+            'Kongbeng':         { border: '#c2410c', fill: '#f97316' },
+            'Telen':            { border: '#b91c1c', fill: '#ef4444' },
+            'Muara Ancalong':   { border: '#475569', fill: '#64748b' },
+            'Muara Bengkal':    { border: '#6d28d9', fill: '#8b5cf6' },
+            'Busang':           { border: '#be185d', fill: '#ec4899' },
+            'Long Mesangat':    { border: '#7e22ce', fill: '#a855f7' },
+            'Batu Ampar':       { border: '#0f766e', fill: '#14b8a6' },
+            'Kaubun':           { border: '#b45309', fill: '#d97706' },
+            'Kaliorang':        { border: '#4338ca', fill: '#6366f1' },
+            'Karangan':         { border: '#be123c', fill: '#f43f5e' },
+            'Sangkulirang':     { border: '#0369a1', fill: '#0284c7' },
+            'Sandaran':         { border: '#115e59', fill: '#0d9488' },
+        };
+
+        function getKecamatanColor(name) {
+            return PALET_18_WARNA[name] || { border: '#0284c7', fill: '#38bdf8' };
+        }
+
+        // 4. Info Box Control (Pojok Kanan Atas)
+        const infoControl = L.control({ position: 'topright' });
+        infoControl.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info-panel');
+            this.update();
+            return this._div;
+        };
+        infoControl.update = function (props) {
+            this._div.innerHTML = props ? `
+                <h4>Kecamatan ${props.nama_kecamatan}</h4>
+                <div class="stat-row"><span>Kabupaten:</span> <span class="stat-val">${props.nama_kabupaten || 'Kutai Timur'}</span></div>
+                <div class="stat-row"><span>Kode Wilayah:</span> <span class="stat-val">${props.kode_kecamatan || '-'}</span></div>
+                <div class="stat-row"><span>Estimasi Luas:</span> <span class="stat-val">${props.luas_ha ? Number(props.luas_ha).toLocaleString('id-ID') + ' Ha' : 'Tersedia'}</span></div>
+            ` : `
+                <h4>Informasi Wilayah</h4>
+                <span style="color:#64748b; font-size:11px;">Arahkan kursor ke wilayah kecamatan untuk melihat rincian</span>
+            `;
+        };
+        infoControl.addTo(map);
+
+        // 5. Interactive Legend Control (Pojok Kanan Bawah)
+        const legendControl = L.control({ position: 'bottomright' });
+        let legendDiv = null;
+        let geojsonLayer = null;
+        let layerMapByName = {};
+
+        legendControl.onAdd = function (map) {
+            legendDiv = L.DomUtil.create('div', 'legend-panel');
+            L.DomEvent.disableClickPropagation(legendDiv);
+            L.DomEvent.disableScrollPropagation(legendDiv);
+            return legendDiv;
+        };
+        legendControl.addTo(map);
+
+        function updateLegend(features) {
+            if (!legendDiv) return;
+            const sorted = [...features].sort((a, b) => 
+                a.properties.nama_kecamatan.localeCompare(b.properties.nama_kecamatan)
+            );
+
+            let html = `
+                <div class="legend-header">
+                    <span>18 KECAMATAN</span>
+                    <span class="count">${sorted.length}</span>
+                </div>
+                <div class="legend-list">
+            `;
+
+            sorted.forEach(f => {
+                const name = f.properties.nama_kecamatan;
+                const color = getKecamatanColor(name);
+                html += `
+                    <div class="legend-item" id="legend-item-${name.replace(/\s+/g, '-')}" 
+                         onclick="selectKecamatanByName('${name}')">
+                        <span class="legend-color-dot" style="background: ${color.fill}; border-color: ${color.border};"></span>
+                        <span>${name}</span>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            legendDiv.innerHTML = html;
+        }
+
+        window.selectKecamatanByName = function(name) {
+            const layer = layerMapByName[name];
+            if (layer) {
+                map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 12 });
+                layer.fire('click');
+            }
+        };
+
+        // 6. Label Centroid Layer
+        const labelLayerGroup = L.layerGroup().addTo(map);
+
+        function updateCentroidLabelsVisibility() {
+            const zoom = map.getZoom();
+            if (zoom >= 9) {
+                if (!map.hasLayer(labelLayerGroup)) {
+                    map.addLayer(labelLayerGroup);
+                }
+            } else {
+                if (map.hasLayer(labelLayerGroup)) {
+                    map.removeLayer(labelLayerGroup);
+                }
+            }
+        }
+        map.on('zoomend', updateCentroidLabelsVisibility);
+
+        // 7. Styling Poligon & Event Handlers
+        function styleFeature(feature) {
+            const colors = getKecamatanColor(feature.properties.nama_kecamatan);
+            return {
+                color: colors.border,
+                weight: 2.5,
+                opacity: 1.0,
+                fillColor: colors.fill,
+                fillOpacity: 0.15,
+                smoothFactor: 1.0
+            };
+        }
+
+        function highlightFeature(e) {
+            const layer = e.target;
+            layer.setStyle({
+                weight: 4,
+                opacity: 1.0,
+                fillOpacity: 0.38
+            });
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                layer.bringToFront();
+            }
+            infoControl.update(layer.feature.properties);
+
+            const name = layer.feature.properties.nama_kecamatan;
+            document.querySelectorAll('.legend-item').forEach(el => el.classList.remove('active'));
+            const activeLegend = document.getElementById('legend-item-' + name.replace(/\s+/g, '-'));
+            if (activeLegend) {
+                activeLegend.classList.add('active');
+                activeLegend.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+
+        function resetHighlight(e) {
+            geojsonLayer.resetStyle(e.target);
+            infoControl.update();
+            document.querySelectorAll('.legend-item').forEach(el => el.classList.remove('active'));
+        }
+
+        function zoomToFeature(e) {
+            const layer = e.target;
+            map.fitBounds(layer.getBounds(), { padding: [30, 30] });
+        }
+
+        function onEachFeature(feature, layer) {
+            const name = feature.properties.nama_kecamatan;
+            layerMapByName[name] = layer;
+
+            layer.on({
+                mouseover: highlightFeature,
+                mouseout: resetHighlight,
+                click: zoomToFeature
+            });
+
+            // Popup detail
+            const p = feature.properties;
+            const popupContent = `
+                <div style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                    <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${getKecamatanColor(name).fill};"></span>
+                        <h3 style="margin:0; font-size:14px; font-weight:800; color:#0f172a;">Kec. ${name}</h3>
+                    </div>
+                    <div style="font-size:11px; color:#64748b; line-height:1.5;">
+                        <div>Kabupaten: <strong>${p.nama_kabupaten || 'Kutai Timur'}</strong></div>
+                        <div>Kode Wilayah: <strong>${p.kode_kecamatan || '-'}</strong></div>
+                    </div>
+                </div>
+            `;
+            layer.bindPopup(popupContent);
+
+            // Centroid marker label
+            if (p.center && Array.isArray(p.center) && p.center.length === 2) {
+                // p.center = [lng, lat]
+                const centerLatLng = [p.center[1], p.center[0]];
+                const label = L.marker(centerLatLng, {
+                    icon: L.divIcon({
+                        className: 'kec-label-permanent',
+                        html: `<span>${name}</span>`,
+                        iconSize: [120, 20],
+                        iconAnchor: [60, 10]
+                    }),
+                    interactive: false
+                });
+                labelLayerGroup.addLayer(label);
+            }
+        }
+
+        // 8. Load GeoJSON Data
+        const GEOJSON_URLS = [
+            'public/data/kutim_kecamatan.geojson',
+            'kutim_kecamatan.geojson',
+            'public/geojson/kutim-kecamatan.json',
+            '/data/kutim_kecamatan.geojson',
+            '/geojson/kutim-kecamatan.json',
+            '/api/kutim/kecamatan-boundaries'
+        ];
+
+        async function fetchGeoJSON() {
+            for (const url of GEOJSON_URLS) {
+                try {
+                    const response = await fetch(url);
+                    if (response.ok) {
+                        const data = await response.json();
+                        const geojson = data.type === 'FeatureCollection' ? data : (data.data || data);
+                        if (geojson && geojson.features && geojson.features.length > 0) {
+                            console.log(`[GeoJSON] Loaded ${geojson.features.length} kecamatan from ${url}`);
+                            return geojson;
+                        }
+                    }
+                } catch (err) {
+                    // Coba opsi berikutnya
+                }
+            }
+            throw new Error('Gagal memuat file GeoJSON dari semua path yang tersedia.');
+        }
+
+        fetchGeoJSON()
+            .then(data => {
+                geojsonLayer = L.geoJSON(data, {
+                    style: styleFeature,
+                    onEachFeature: onEachFeature
+                }).addTo(map);
+
+                // Auto-fit ke seluruh wilayah Kutai Timur
+                map.fitBounds(geojsonLayer.getBounds(), { padding: [20, 20] });
+
+                // Render legend list
+                updateLegend(data.features);
+
+                // Initial label visibility check
+                updateCentroidLabelsVisibility();
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('header').innerHTML += `
+                    <div style="margin-top:8px; padding:6px 10px; background:#fee2e2; border:1px solid #fca5a5; border-radius:8px; color:#b91c1c; font-size:11px;">
+                        Gagal memuat kutim_kecamatan.geojson. Pastikan file tersedia di public/data/kutim_kecamatan.geojson atau jalankan server lokal.
+                    </div>
+                `;
+            });
+    </script>
+</body>
+</html>

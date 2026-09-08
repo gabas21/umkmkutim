@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="bg-slate-900 text-white py-8 border-b border-slate-800">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" data-reveal>
         <a href="{{ route('umkm.index') }}" class="inline-flex items-center gap-2 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition mb-4">
             <i class="fa-solid fa-arrow-left"></i> Kembali ke Direktori Usaha
         </a>
@@ -58,7 +58,7 @@
     </div>
 </div>
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" data-reveal>
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Main Info (Left 2 Cols) -->
         <div class="lg:col-span-2 space-y-8">

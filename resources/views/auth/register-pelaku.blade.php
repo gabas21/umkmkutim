@@ -5,12 +5,12 @@
 @section('content')
 <div class="min-h-[70vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 shadow-xl space-y-6">
-        <div class="text-center space-y-2">
-            <div class="w-14 h-14 rounded-2xl gradient-kutim mx-auto flex items-center justify-center text-white text-2xl shadow-md">
-                <i class="fa-solid fa-user-plus text-amber-300"></i>
+        <div class="text-center space-y-3">
+            <img src="{{ asset('logo1.png') }}" alt="Logo Kabupaten Kutai Timur" class="h-16 w-auto mx-auto object-contain drop-shadow-sm">
+            <div>
+                <h2 class="text-2xl font-black text-slate-900">Pendaftaran Akun Pelaku Usaha</h2>
+                <p class="text-xs text-slate-500 mt-1">Khusus untuk pemilik dan pelaku usaha mikro, kecil, dan menengah di Kutai Timur</p>
             </div>
-            <h2 class="text-2xl font-black text-slate-900">Pendaftaran Akun</h2>
-            <p class="text-xs text-slate-500">Khusus untuk pemilik dan pelaku usaha mikro, kecil, dan menengah di Kutai Timur</p>
         </div>
 
         <form action="{{ route('register.post') }}" method="POST" class="space-y-4">

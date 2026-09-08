@@ -5,12 +5,12 @@
 @section('content')
 <div class="min-h-[70vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full bg-slate-900 text-white rounded-3xl p-8 sm:p-10 border border-slate-800 shadow-2xl space-y-6">
-        <div class="text-center space-y-2">
-            <div class="w-14 h-14 rounded-2xl bg-emerald-600 mx-auto flex items-center justify-center text-white text-2xl shadow-md">
-                <i class="fa-solid fa-shield-halved text-amber-300"></i>
+        <div class="text-center space-y-3">
+            <img src="{{ asset('logo1.png') }}" alt="Logo Kabupaten Kutai Timur" class="h-16 w-auto mx-auto object-contain drop-shadow-md">
+            <div>
+                <h2 class="text-2xl font-black text-white">Login Admin Dinas</h2>
+                <p class="text-xs text-slate-400 mt-1">Portal verifikasi berkas klaim dan manajemen direktori daerah</p>
             </div>
-            <h2 class="text-2xl font-black text-white">Login Admin Dinas</h2>
-            <p class="text-xs text-slate-400">Portal verifikasi berkas klaim dan manajemen direktori daerah</p>
         </div>
 
         <div class="p-3.5 rounded-xl bg-emerald-950/60 border border-emerald-800 text-[11px] text-emerald-300 space-y-1">
