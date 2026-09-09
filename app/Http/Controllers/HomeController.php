@@ -28,56 +28,34 @@ class HomeController extends Controller
         $totalTerverifikasi = Umkm::where('status_klaim', 'terverifikasi')->count();
         $persenTerverifikasi = $totalUmkm > 0 ? round(($totalTerverifikasi / $totalUmkm) * 100, 1) : 0;
 
+        // Data status perizinan / klaim untuk donat chart
+        $statusKlaimData = Umkm::active()
+            ->select('status_klaim', DB::raw('count(*) as total'))
+            ->groupBy('status_klaim')
+            ->get()
+            ->pluck('total', 'status_klaim');
+
         // Kategori dengan jumlah UMKM
         $kategoriList = Kategori::withCount(['umkm' => function ($q) {
             $q->where('status', 'active');
         }])->get();
 
-        // UMKM Unggulan (rating tertinggi & terpopuler)
+        // UMKM Unggulan (rating tertinggi & terpopuler, 8 item)
         $featuredUmkm = Umkm::active()
             ->withCoordinates()
             ->with('kategori')
             ->orderByDesc('rating')
             ->orderByDesc('jumlah_review')
-            ->take(5)
+            ->take(8)
             ->get();
 
-        // Bazar Terdekat (Upcoming)
-        $upcomingBazar = Bazar::withCount(['peserta' => function ($q) {
-            $q->whereIn('status', ['pending', 'diterima']);
-        }])
-            ->whereIn('status', ['upcoming', 'ongoing'])
-            ->orderBy('tanggal_mulai', 'asc')
-            ->take(2)
-            ->get();
-
-        // Pelatihan Mendatang
-        $upcomingPelatihan = Pelatihan::withCount('peserta')
-            ->whereIn('status', ['upcoming', 'ongoing'])
-            ->orderBy('tanggal_mulai', 'asc')
-            ->take(3)
-            ->get();
-
-        // Berita Terbaru
-        $latestBerita = Berita::published()->take(3)->get();
-
-        // Metrik Laporan untuk Dashboard Section
+        // Metrik Seluruh Kecamatan untuk Bar Visualisasi
         $kecamatanStats = Umkm::active()
             ->select('kecamatan', DB::raw('count(*) as total'))
             ->groupBy('kecamatan')
             ->orderByDesc('total')
-            ->take(6)
             ->get();
         $maxKecamatan = $kecamatanStats->max('total') ?: 1;
-
-        // Metrik Survey Kepuasan untuk Survey Section
-        $totalSurvey = SurveyKepuasan::count();
-        $avgKemudahan = SurveyKepuasan::avg('nilai_kemudahan') ?: 4.8;
-        $avgKecepatan = SurveyKepuasan::avg('nilai_kecepatan') ?: 4.7;
-        $avgKeramahan = SurveyKepuasan::avg('nilai_keramahan') ?: 4.9;
-        $avgKemanfaatan = SurveyKepuasan::avg('nilai_kemanfaatan') ?: 4.8;
-        $indeksRataRata = round(($avgKemudahan + $avgKecepatan + $avgKeramahan + $avgKemanfaatan) / 4, 2);
-        $indeksPersen = round(($indeksRataRata / 5) * 100, 1);
 
         // Data titik peta untuk preview Leaflet (clustering)
         $mapPoints = Umkm::active()
@@ -108,20 +86,11 @@ class HomeController extends Controller
             'totalKategori',
             'totalTerverifikasi',
             'persenTerverifikasi',
+            'statusKlaimData',
             'kategoriList',
             'featuredUmkm',
-            'upcomingBazar',
-            'upcomingPelatihan',
-            'latestBerita',
             'kecamatanStats',
             'maxKecamatan',
-            'totalSurvey',
-            'avgKemudahan',
-            'avgKecepatan',
-            'avgKeramahan',
-            'avgKemanfaatan',
-            'indeksRataRata',
-            'indeksPersen',
             'mapPoints'
         ));
     }

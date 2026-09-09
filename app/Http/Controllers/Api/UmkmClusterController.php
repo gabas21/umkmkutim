@@ -184,7 +184,10 @@ class UmkmClusterController extends Controller
             // Maximum UMKM per cluster before auto-splitting at higher zoom levels
             $maxClusterCount = 2000;
 
-            if ($isUnfiltered && \Illuminate\Support\Facades\Schema::hasTable('umkm_grid_cluster')) {
+            $hasGridCluster = \Illuminate\Support\Facades\Schema::hasTable('umkm_grid_cluster')
+                && DB::table('umkm_grid_cluster')->exists();
+
+            if ($isUnfiltered && $hasGridCluster) {
                 // Saat zoom <= 9 (tampilan seluruh Kabupaten Kutai Timur):
                 // Kelompokkan secara administratif per kecamatan agar tiap wilayah memiliki
                 // tepat 1 penanda kluster resmi di pusat geografisnya, tanpa tumpang tindih.

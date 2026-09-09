@@ -108,6 +108,19 @@
         [data-reveal-delay="2"].revealed { transition-delay: 0.2s; }
         [data-reveal-delay="3"].revealed { transition-delay: 0.3s; }
         [data-reveal-delay="4"].revealed { transition-delay: 0.4s; }
+        [data-reveal-delay="5"].revealed { transition-delay: 0.5s; }
+        [data-reveal-delay="6"].revealed { transition-delay: 0.6s; }
+        [data-reveal-delay="7"].revealed { transition-delay: 0.7s; }
+        [data-reveal-delay="8"].revealed { transition-delay: 0.8s; }
+
+        /* Hover cards: GPU-safe */
+        .card-hover {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(5, 150, 105, 0.12);
+        }
 
         /* Hide scrollbars for snap pills */
         .no-scrollbar::-webkit-scrollbar {
@@ -197,12 +210,18 @@
                             </button>
                         </form>
                     @else
-                        <a href="{{ route('register') }}" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 shadow-md shadow-amber-950/15 transition active:scale-95">
-                            <i class="fa-solid fa-store"></i> Daftarkan Usaha
-                        </a>
-                        <a href="{{ route('login') }}" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-emerald-700 hover:bg-slate-100 transition">
-                            Masuk
-                        </a>
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-[11px] text-slate-500 max-w-[145px] leading-tight text-right hidden xl:block">
+                                Login untuk Mengakses Sebuah Layanan UMKM
+                            </span>
+                            <a href="{{ route('login') }}" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition shadow-sm flex items-center gap-1.5">
+                                <i class="fa-solid fa-right-to-bracket"></i>
+                                <span>Login</span>
+                            </a>
+                            <a href="{{ route('register') }}" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 shadow-md shadow-amber-950/15 transition active:scale-95">
+                                <i class="fa-solid fa-store"></i> Daftarkan Usaha
+                            </a>
+                        </div>
                     @endif
                 </div>
 
@@ -249,11 +268,17 @@
                         Panel Admin Dinas
                     </a>
                 @else
+                    <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 mb-1 text-center">
+                        <p class="text-[11px] text-slate-500 font-medium leading-relaxed">
+                            Login untuk Mengakses Sebuah Layanan UMKM
+                        </p>
+                    </div>
+                    <a href="{{ route('login') }}" class="w-full text-center px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        <span>Login</span>
+                    </a>
                     <a href="{{ route('register') }}" class="w-full text-center px-4 py-2.5 rounded-xl text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500">
                         Daftarkan Usaha (Gratis)
-                    </a>
-                    <a href="{{ route('login') }}" class="w-full text-center px-4 py-2.5 rounded-xl text-xs font-semibold border border-slate-300 text-slate-700">
-                        Masuk Pelaku Usaha
                     </a>
                 @endif
             </div>
@@ -295,10 +320,75 @@
         @yield('content')
     </main>
 
-    <!-- Rich Footer -->
-    <footer class="bg-slate-900 text-slate-300 pt-16 pb-12 border-t border-slate-800 mt-20">
+    <!-- Rich Unified Footer -->
+    <footer class="bg-slate-950 text-slate-300 border-t border-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
+            
+            <!-- Top Utility & Hub Bar (Sosmed, Dinkop, SIGAP, Login CTA) -->
+            <div class="py-7 border-b border-slate-800/80 flex flex-col lg:flex-row items-center justify-between gap-5">
+                
+                <!-- Link Sosmed Resmi -->
+                <div class="flex items-center gap-2.5">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Ikuti Kami:</span>
+                    <a href="https://www.facebook.com/dinkopkutim" target="_blank" rel="noopener noreferrer"
+                       class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-blue-600 hover:border-blue-500 hover:text-white transition flex items-center justify-center text-xs shadow-2xs"
+                       title="Facebook Dinas Koperasi Kutim">
+                        <i class="fa-brands fa-facebook-f"></i>
+                    </a>
+                    <a href="https://www.instagram.com/dinkop_kutim" target="_blank" rel="noopener noreferrer"
+                       class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-pink-600 hover:border-pink-500 hover:text-white transition flex items-center justify-center text-xs shadow-2xs"
+                       title="Instagram Dinas Koperasi Kutim">
+                        <i class="fa-brands fa-instagram"></i>
+                    </a>
+                    <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer"
+                       class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-red-600 hover:border-red-500 hover:text-white transition flex items-center justify-center text-xs shadow-2xs"
+                       title="Saluran YouTube Resmi">
+                        <i class="fa-brands fa-youtube"></i>
+                    </a>
+                </div>
+
+                <!-- Tombol ke Web Dinkop Kutim & Tombol SIGAP -->
+                <div class="flex flex-wrap items-center justify-center gap-2.5">
+                    <a href="https://dinkop.kutaitimurkab.go.id/" target="_blank" rel="noopener noreferrer"
+                       class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-slate-200 hover:bg-emerald-900/60 hover:border-emerald-500/50 hover:text-emerald-300 transition shadow-2xs">
+                        <i class="fa-solid fa-building-columns text-emerald-400"></i>
+                        <span>Web Dinkop Kutim</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-slate-400"></i>
+                    </a>
+                    <a href="#" 
+                       class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-slate-200 hover:bg-amber-900/40 hover:border-amber-500/50 hover:text-amber-300 transition shadow-2xs">
+                        <i class="fa-solid fa-shield-halved text-amber-400"></i>
+                        <span>Tombol SIGAP</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-slate-400"></i>
+                    </a>
+                </div>
+
+                <!-- Tombol Login dan Keterangan Resmi -->
+                <div class="flex items-center gap-3 text-center lg:text-right">
+                    @if(Auth::guard('pelaku_usaha')->check())
+                        <div class="text-xs text-slate-400">
+                            <span class="text-emerald-400 font-bold">Akun Aktif:</span> {{ Auth::guard('pelaku_usaha')->user()->nama_usaha ?? 'Pelaku Usaha' }}
+                        </div>
+                        <a href="{{ route('dashboard.pelaku') }}" 
+                           class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition shadow-sm">
+                            Dashboard Usaha
+                        </a>
+                    @else
+                        <p class="text-xs text-slate-400 max-w-[190px] leading-tight hidden sm:block">
+                            Login untuk Mengakses Sebuah Layanan UMKM
+                        </p>
+                        <a href="{{ route('login') }}" 
+                           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs transition-all duration-300 shadow-md shadow-amber-950/20 active:scale-95">
+                            <i class="fa-solid fa-right-to-bracket"></i>
+                            <span>Login</span>
+                        </a>
+                    @endif
+                </div>
+
+            </div>
+
+            <!-- Main Footer Columns -->
+            <div class="pt-12 pb-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
                 <!-- Branding & Gov Info -->
                 <div class="lg:col-span-2 space-y-4">
                     <div class="flex items-center gap-3">
@@ -362,6 +452,9 @@
             </div>
         </div>
     </footer>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 
     <!-- Leaflet & Clustering JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
