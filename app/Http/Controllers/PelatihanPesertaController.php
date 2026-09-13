@@ -21,38 +21,44 @@ class PelatihanPesertaController extends Controller
             return back()->with('warning', 'Mohon maaf, kuota peserta pelatihan ini sudah penuh.');
         }
 
-        $request->validate([
-            'nama_peserta' => 'required|string|max:255',
-            'nama_usaha' => 'nullable|string|max:255',
-            'email' => 'required|email|max:100',
-            'nomor_hp' => 'required|string|max:30',
-            'instansi' => 'nullable|string|max:255',
-            'motivasi' => 'nullable|string|max:1000',
-        ]);
-
-        $pelakuUsahaId = null;
-        if (Auth::guard('pelaku_usaha')->check()) {
-            $pelakuUsahaId = Auth::guard('pelaku_usaha')->id();
+        if (!Auth::guard('pelaku_usaha')->check()) {
+            return redirect()->route('register')->with('warning', 'Silakan buat akun terlebih dahulu untuk mendaftar pelatihan.');
         }
 
-        // Check if already registered with same email
+        $user = Auth::guard('pelaku_usaha')->user();
+        $pelakuUsahaId = $user->id;
+
+        // Check if already registered
         $existing = PelatihanPeserta::where('pelatihan_id', $pelatihan->id)
-            ->where('email', $request->email)
+            ->where(function ($q) use ($pelakuUsahaId, $user) {
+                $q->where('pelaku_usaha_id', $pelakuUsahaId);
+                if (!empty($user->email)) {
+                    $q->orWhere('email', $user->email);
+                }
+            })
             ->first();
 
         if ($existing) {
-            return back()->with('warning', 'Alamat email ini sudah terdaftar sebagai peserta untuk pelatihan ini.');
+            return back()->with('warning', 'Anda sudah terdaftar sebagai peserta untuk pelatihan ini.');
         }
+
+        $umkm = method_exists($user, 'umkmTerverifikasi') ? $user->umkmTerverifikasi()->first() : null;
+        $namaPeserta = $request->input('nama_peserta', $user->nama);
+        $namaUsaha = $request->input('nama_usaha', $umkm ? $umkm->nama_usaha : ('Usaha ' . $user->nama));
+        $email = $request->input('email', $user->email);
+        $nomorHp = $request->input('nomor_hp', $user->nomor_telepon ?: '081200000000');
+        $instansi = $request->input('instansi', $umkm ? ('UMKM ' . $umkm->nama_usaha) : 'Mandiri');
+        $motivasi = $request->input('motivasi', 'Mengembangkan usaha dan kapasitas wirausaha mandiri.');
 
         PelatihanPeserta::create([
             'pelatihan_id' => $pelatihan->id,
             'pelaku_usaha_id' => $pelakuUsahaId,
-            'nama_peserta' => $request->nama_peserta,
-            'nama_usaha' => $request->nama_usaha,
-            'email' => $request->email,
-            'nomor_hp' => $request->nomor_hp,
-            'instansi' => $request->instansi,
-            'motivasi' => $request->motivasi,
+            'nama_peserta' => $namaPeserta,
+            'nama_usaha' => $namaUsaha,
+            'email' => $email,
+            'nomor_hp' => $nomorHp,
+            'instansi' => $instansi,
+            'motivasi' => $motivasi,
             'status' => 'terdaftar',
         ]);
 

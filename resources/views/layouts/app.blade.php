@@ -25,6 +25,9 @@
     <!-- Alpine.js -->
     <script defer src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js"></script>
 
+    <!-- Swiper.js CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
@@ -151,7 +154,7 @@
                     </div>
                 </a>
 
-                <!-- Desktop Navigation Links (5 Menu Sesuai Brief) -->
+                <!-- Desktop Navigation Links (WadahNgopi Style: Clean, Merged Bazar & Pelatihan, Tanpa Laporan) -->
                 <nav class="hidden lg:flex items-center gap-1 xl:gap-1.5">
                     <!-- 1. Home / Beranda -->
                     <a href="{{ route('home') }}" class="px-3.5 py-2 rounded-xl text-sm font-semibold {{ request()->routeIs('home') ? 'text-emerald-800 bg-emerald-50/90 border border-emerald-200/70 shadow-xs' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }} transition">
@@ -163,20 +166,10 @@
                         UMKM
                     </a>
 
-                    <!-- 3. Bazar -->
-                    <a href="{{ route('bazar.index') }}" class="px-3.5 py-2 rounded-xl text-sm font-semibold {{ request()->routeIs('bazar.*') ? 'text-emerald-800 bg-emerald-50/90 border border-emerald-200/70 shadow-xs' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }} transition flex items-center gap-1.5">
-                        <span>Bazar</span>
+                    <!-- 3. Bazar & Pelatihan -->
+                    <a href="{{ route('bazar.index') }}" class="px-3.5 py-2 rounded-xl text-sm font-semibold {{ request()->routeIs('bazar.*') || request()->routeIs('pelatihan.*') ? 'text-emerald-800 bg-emerald-50/90 border border-emerald-200/70 shadow-xs' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }} transition flex items-center gap-1.5">
+                        <span>Bazar & Pelatihan</span>
                         <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                    </a>
-
-                    <!-- 4. Pelatihan -->
-                    <a href="{{ route('pelatihan.index') }}" class="px-3.5 py-2 rounded-xl text-sm font-semibold {{ request()->routeIs('pelatihan.*') ? 'text-emerald-800 bg-emerald-50/90 border border-emerald-200/70 shadow-xs' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }} transition">
-                        Pelatihan
-                    </a>
-
-                    <!-- 5. Laporan -->
-                    <a href="{{ route('laporan.index') }}" class="px-3.5 py-2 rounded-xl text-sm font-semibold {{ request()->routeIs('laporan.*') ? 'text-emerald-800 bg-emerald-50/90 border border-emerald-200/70 shadow-xs' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }} transition">
-                        Laporan
                     </a>
                 </nav>
 
@@ -242,14 +235,8 @@
             <a href="{{ route('umkm.index') }}" class="block px-3.5 py-2.5 rounded-xl text-sm font-semibold {{ request()->routeIs('umkm.*') ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700 hover:bg-slate-50' }}">
                 <i class="fa-solid fa-store w-6 text-emerald-600"></i> UMKM (Direktori & Peta)
             </a>
-            <a href="{{ route('bazar.index') }}" class="block px-3.5 py-2.5 rounded-xl text-sm font-semibold {{ request()->routeIs('bazar.*') ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700 hover:bg-slate-50' }}">
-                <i class="fa-solid fa-tent w-6 text-amber-500"></i> Bazar & Event
-            </a>
-            <a href="{{ route('pelatihan.index') }}" class="block px-3.5 py-2.5 rounded-xl text-sm font-semibold {{ request()->routeIs('pelatihan.*') ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700 hover:bg-slate-50' }}">
-                <i class="fa-solid fa-graduation-cap w-6 text-emerald-600"></i> Pelatihan Usaha
-            </a>
-            <a href="{{ route('laporan.index') }}" class="block px-3.5 py-2.5 rounded-xl text-sm font-semibold {{ request()->routeIs('laporan.*') ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700 hover:bg-slate-50' }}">
-                <i class="fa-solid fa-chart-pie w-6 text-emerald-600"></i> Laporan Transparansi
+            <a href="{{ route('bazar.index') }}" class="block px-3.5 py-2.5 rounded-xl text-sm font-semibold {{ request()->routeIs('bazar.*') || request()->routeIs('pelatihan.*') ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700 hover:bg-slate-50' }}">
+                <i class="fa-solid fa-calendar-check w-6 text-amber-500"></i> Bazar & Pelatihan
             </a>
             <a href="{{ route('survey.create') }}" class="block px-3.5 py-2.5 rounded-xl text-sm font-semibold text-amber-700 hover:bg-amber-50">
                 <i class="fa-solid fa-star w-6 text-amber-500"></i> Survey Kepuasan Layanan
@@ -324,69 +311,6 @@
     <footer class="bg-slate-950 text-slate-300 border-t border-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
-            <!-- Top Utility & Hub Bar (Sosmed, Dinkop, SIGAP, Login CTA) -->
-            <div class="py-7 border-b border-slate-800/80 flex flex-col lg:flex-row items-center justify-between gap-5">
-                
-                <!-- Link Sosmed Resmi -->
-                <div class="flex items-center gap-2.5">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Ikuti Kami:</span>
-                    <a href="https://www.facebook.com/dinkopkutim" target="_blank" rel="noopener noreferrer"
-                       class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-blue-600 hover:border-blue-500 hover:text-white transition flex items-center justify-center text-xs shadow-2xs"
-                       title="Facebook Dinas Koperasi Kutim">
-                        <i class="fa-brands fa-facebook-f"></i>
-                    </a>
-                    <a href="https://www.instagram.com/dinkop_kutim" target="_blank" rel="noopener noreferrer"
-                       class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-pink-600 hover:border-pink-500 hover:text-white transition flex items-center justify-center text-xs shadow-2xs"
-                       title="Instagram Dinas Koperasi Kutim">
-                        <i class="fa-brands fa-instagram"></i>
-                    </a>
-                    <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer"
-                       class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-red-600 hover:border-red-500 hover:text-white transition flex items-center justify-center text-xs shadow-2xs"
-                       title="Saluran YouTube Resmi">
-                        <i class="fa-brands fa-youtube"></i>
-                    </a>
-                </div>
-
-                <!-- Tombol ke Web Dinkop Kutim & Tombol SIGAP -->
-                <div class="flex flex-wrap items-center justify-center gap-2.5">
-                    <a href="https://dinkop.kutaitimurkab.go.id/" target="_blank" rel="noopener noreferrer"
-                       class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-slate-200 hover:bg-emerald-900/60 hover:border-emerald-500/50 hover:text-emerald-300 transition shadow-2xs">
-                        <i class="fa-solid fa-building-columns text-emerald-400"></i>
-                        <span>Web Dinkop Kutim</span>
-                        <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-slate-400"></i>
-                    </a>
-                    <a href="#" 
-                       class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-slate-200 hover:bg-amber-900/40 hover:border-amber-500/50 hover:text-amber-300 transition shadow-2xs">
-                        <i class="fa-solid fa-shield-halved text-amber-400"></i>
-                        <span>Tombol SIGAP</span>
-                        <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-slate-400"></i>
-                    </a>
-                </div>
-
-                <!-- Tombol Login dan Keterangan Resmi -->
-                <div class="flex items-center gap-3 text-center lg:text-right">
-                    @if(Auth::guard('pelaku_usaha')->check())
-                        <div class="text-xs text-slate-400">
-                            <span class="text-emerald-400 font-bold">Akun Aktif:</span> {{ Auth::guard('pelaku_usaha')->user()->nama_usaha ?? 'Pelaku Usaha' }}
-                        </div>
-                        <a href="{{ route('dashboard.pelaku') }}" 
-                           class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 transition shadow-sm">
-                            Dashboard Usaha
-                        </a>
-                    @else
-                        <p class="text-xs text-slate-400 max-w-[190px] leading-tight hidden sm:block">
-                            Login untuk Mengakses Sebuah Layanan UMKM
-                        </p>
-                        <a href="{{ route('login') }}" 
-                           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs transition-all duration-300 shadow-md shadow-amber-950/20 active:scale-95">
-                            <i class="fa-solid fa-right-to-bracket"></i>
-                            <span>Login</span>
-                        </a>
-                    @endif
-                </div>
-
-            </div>
-
             <!-- Main Footer Columns -->
             <div class="pt-12 pb-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
                 <!-- Branding & Gov Info -->
@@ -413,15 +337,13 @@
                     </div>
                 </div>
 
-                <!-- 5 Modul Utama Navigasi -->
+                <!-- Modul Utama Navigasi -->
                 <div>
                     <h4 class="text-sm font-bold text-white uppercase tracking-wider mb-4 border-b border-slate-800 pb-2">Layanan Portal</h4>
                     <ul class="space-y-2.5 text-sm text-slate-400">
                         <li><a href="{{ route('home') }}" class="hover:text-emerald-400 transition">Beranda Utama</a></li>
                         <li><a href="{{ route('umkm.index') }}" class="hover:text-emerald-400 transition">Direktori & Peta UMKM</a></li>
-                        <li><a href="{{ route('bazar.index') }}" class="hover:text-emerald-400 transition flex items-center gap-1.5"><span>Bazar & Pameran</span> <span class="px-1.5 py-0.2 rounded text-[10px] bg-amber-500/20 text-amber-300 font-bold">Baru</span></a></li>
-                        <li><a href="{{ route('pelatihan.index') }}" class="hover:text-emerald-400 transition">Pelatihan & Bimtek</a></li>
-                        <li><a href="{{ route('laporan.index') }}" class="hover:text-emerald-400 transition">Laporan Transparansi</a></li>
+                        <li><a href="{{ route('bazar.index') }}" class="hover:text-emerald-400 transition flex items-center gap-1.5"><span>Bazar & Pelatihan</span> <span class="px-1.5 py-0.2 rounded text-[10px] bg-amber-500/20 text-amber-300 font-bold">Event</span></a></li>
                         <li><a href="{{ route('survey.create') }}" class="hover:text-amber-400 transition font-semibold text-amber-300">Survey Kepuasan Layanan</a></li>
                     </ul>
                 </div>
@@ -445,8 +367,6 @@
             <div class="mt-12 pt-6 border-t border-slate-800/80 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
                 <p>&copy; {{ date('Y') }} Dinas Koperasi, Usaha Kecil dan Menengah Kabupaten Kutai Timur. Seluruh Hak Cipta Dilindungi.</p>
                 <div class="flex items-center gap-4">
-                    <a href="{{ route('laporan.index') }}" class="hover:text-slate-400 transition">Dashboard Publik</a>
-                    <span>•</span>
                     <a href="{{ route('admin.login') }}" class="hover:text-slate-400 transition">Akses Administrator Dinas</a>
                 </div>
             </div>
@@ -483,6 +403,9 @@
             }
         });
     </script>
+
+    <!-- Swiper.js JS -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
     @stack('scripts')
 </body>

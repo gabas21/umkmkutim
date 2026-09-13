@@ -134,58 +134,81 @@
                     </div>
 
                     @if($pelatihan->sisa_kuota > 0 && in_array($pelatihan->status, ['upcoming', 'ongoing']))
-                        <form action="{{ route('pelatihan.daftar', $pelatihan->slug) }}" method="POST" class="space-y-4">
-                            @csrf
+                        @if(Auth::guard('pelaku_usaha')->check())
+                            @php
+                                $user = Auth::guard('pelaku_usaha')->user();
+                                $isRegistered = \App\Models\PelatihanPeserta::where('pelatihan_id', $pelatihan->id)
+                                    ->where('pelaku_usaha_id', $user->id)
+                                    ->first();
+                            @endphp
 
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap Peserta *</label>
-                                <input type="text" name="nama_peserta" required 
-                                       value="{{ Auth::guard('pelaku_usaha')->check() ? Auth::guard('pelaku_usaha')->user()->nama : old('nama_peserta') }}"
-                                       placeholder="Nama lengkap sesuai KTP" 
-                                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Usaha / Usaha yang Dirintis</label>
-                                <input type="text" name="nama_usaha" value="{{ old('nama_usaha') }}"
-                                       placeholder="Kosongkan jika baru akan merintis usaha" 
-                                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1">Email Aktif *</label>
-                                    <input type="email" name="email" required
-                                           value="{{ Auth::guard('pelaku_usaha')->check() ? Auth::guard('pelaku_usaha')->user()->email : old('email') }}"
-                                           placeholder="nama@email.com" 
-                                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                            @if($isRegistered)
+                                <div class="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-2">
+                                    <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto text-xl">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                    </div>
+                                    <h3 class="text-sm font-bold text-emerald-900">Anda Sudah Terdaftar</h3>
+                                    <p class="text-xs text-emerald-700 leading-relaxed">
+                                        Pendaftaran Anda telah tercatat pada program pelatihan ini. Jadwal pelaksanaan dan link kelas/grup akan dikirim melalui WhatsApp & Email.
+                                    </p>
+                                    <div class="pt-2 text-[11px] font-semibold text-emerald-800">
+                                        Status: <span class="uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-200/80">{{ $isRegistered->status }}</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1">Nomor WhatsApp *</label>
-                                    <input type="text" name="nomor_hp" required 
-                                           value="{{ Auth::guard('pelaku_usaha')->check() ? Auth::guard('pelaku_usaha')->user()->nomor_telepon : old('nomor_hp') }}"
-                                           placeholder="081234567890" 
-                                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                            @else
+                                <!-- Data Pelaku Usaha Terhubung -->
+                                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-500 font-medium">Nama Peserta:</span>
+                                        <span class="font-bold text-slate-800">{{ $user->nama }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-500 font-medium">Nomor WhatsApp:</span>
+                                        <span class="font-bold text-slate-800">{{ $user->nomor_telepon ?: '-' }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-500 font-medium">Email:</span>
+                                        <span class="font-bold text-slate-800">{{ $user->email }}</span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Asal Lembaga / Komunitas (Opsional)</label>
-                                <input type="text" name="instansi" value="{{ old('instansi') }}" placeholder="Contoh: Asosiasi Kuliner Sangatta / Mandiri" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
-                            </div>
+                                <form action="{{ route('pelatihan.daftar', $pelatihan->slug) }}" method="POST" class="space-y-4">
+                                    @csrf
+                                    <button type="submit" class="w-full py-3.5 rounded-xl font-bold text-xs text-white bg-emerald-700 hover:bg-emerald-800 shadow-sm transition active:scale-[0.98] flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-graduation-cap"></i>
+                                        <span>Daftar Peserta Pelatihan Sekarang</span>
+                                    </button>
+                                    <p class="text-[11px] text-slate-400 text-center leading-relaxed">
+                                        * Gratis tanpa dipungut biaya. Biaya ditanggung APBD Pemkab Kutim.
+                                    </p>
+                                </form>
+                            @endif
+                        @else
+                            <!-- Belum Memiliki Akun / Belum Login -->
+                            <div class="space-y-4">
+                                <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-xs text-amber-900 leading-relaxed">
+                                    <div class="flex items-center gap-2 font-bold mb-1 text-amber-800">
+                                        <i class="fa-solid fa-circle-info"></i>
+                                        <span>Petunjuk Pendaftaran Pelatihan</span>
+                                    </div>
+                                    Pendaftaran pelatihan memerlukan akun Pelaku Usaha UMKM Kutai Timur agar riwayat sertifikasi dan keikutsertaan bimtek tercatat resmi.
+                                </div>
 
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Tujuan / Motivasi Mengikuti Pelatihan</label>
-                                <textarea name="motivasi" rows="2" placeholder="Apa yang ingin dicapai melalui pelatihan ini..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">{{ old('motivasi') }}</textarea>
-                            </div>
+                                <!-- Tombol Daftar Akun Terlebih Dahulu -->
+                                <a href="{{ route('register') }}" 
+                                   class="w-full py-3.5 px-4 rounded-xl font-bold text-xs text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 shadow-md shadow-amber-950/20 transition active:scale-[0.98] flex items-center justify-center gap-2 text-center">
+                                    <i class="fa-solid fa-user-plus"></i>
+                                    <span>Belum Punya Akun? Daftar Terlebih Dahulu</span>
+                                </a>
 
-                            <button type="submit" class="w-full py-3 rounded-xl font-bold text-xs text-white bg-emerald-700 hover:bg-emerald-800 transition shadow-sm active:scale-[0.98]">
-                                Kirim Pendaftaran Pelatihan
-                            </button>
-                            <p class="text-[11px] text-slate-400 text-center">
-                                * Gratis tanpa dipungut biaya. Biaya ditanggung APBD Pemkab Kutim.
-                            </p>
-                        </form>
+                                <!-- Tombol Sudah Punya Akun / Login -->
+                                <a href="{{ route('login') }}" 
+                                   class="w-full py-3 px-4 rounded-xl font-bold text-xs text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition active:scale-[0.98] flex items-center justify-center gap-2 text-center">
+                                    <i class="fa-solid fa-right-to-bracket"></i>
+                                    <span>Sudah Memiliki Akun? Masuk / Login</span>
+                                </a>
+                            </div>
+                        @endif
                     @else
                         <div class="p-6 text-center rounded-2xl bg-slate-50 border border-slate-200">
                             <i class="fa-solid fa-users-slash text-3xl text-slate-400 mb-2"></i>

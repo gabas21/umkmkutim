@@ -454,7 +454,10 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         map = L.map('full-interactive-map', {
-
+            scrollWheelZoom: false,
+            touchZoom: false,
+            doubleClickZoom: false,
+            boxZoom: false,
             preferCanvas: true,
             zoomControl: true,
             zoomAnimation: true,

@@ -4,26 +4,46 @@
 
 @section('content')
 <!-- Header Banner -->
-<section class="bg-gradient-to-b from-[#021f18] to-slate-900 text-white py-14 border-b border-emerald-950">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" data-reveal>
-        <div class="flex items-center gap-2 text-xs text-emerald-300 mb-3">
-            <a href="{{ route('home') }}" class="hover:underline">Beranda</a>
-            <span>/</span>
+<section class="relative overflow-hidden bg-[#021813] text-white py-12 sm:py-16 lg:py-20 border-b border-emerald-950/80">
+    <!-- Background Image Nyata Bazar UMKM Kutim -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+        <img src="{{ asset('umkm.png') }}" 
+             alt="Bazar & Gelar Dagang UMKM Kutai Timur" 
+             class="w-full h-full object-cover object-right md:object-center transform scale-105 transition-transform duration-1000">
+        
+        <!-- Layer Tint & Gradient Overlay untuk Kontras Teks Maksimal -->
+        <div class="absolute inset-0 bg-gradient-to-r from-[#021813] via-[#021813]/85 to-[#021813]/30 md:via-[#021813]/70 md:to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-[#021813]/90 via-transparent to-[#021813]/40"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] [background-size:24px_24px] opacity-20"></div>
+    </div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" data-reveal>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 backdrop-blur-md border border-emerald-500/30 text-xs text-emerald-300 mb-4 shadow-xs">
+            <a href="{{ route('home') }}" class="hover:underline flex items-center gap-1.5">
+                <i class="fa-solid fa-house text-[10px]"></i>
+                <span>Beranda</span>
+            </a>
+            <span class="text-emerald-500">/</span>
             <span class="text-white font-semibold">Bazar & Pameran Usaha</span>
         </div>
+
         <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
             <div class="max-w-2xl">
-                <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                    Bazar & Gelar Dagang UMKM
+                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+                    Bazar & Gelar Dagang <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-100 to-amber-300">UMKM</span>
                 </h1>
-                <p class="text-sm sm:text-base text-slate-300 mt-2 leading-relaxed">
+                <p class="text-sm sm:text-base text-emerald-100/90 mt-3 leading-relaxed drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)] font-normal">
                     Pameran resmi, festival kuliner daerah, dan expo produk unggulan binaan Pemerintah Kabupaten Kutai Timur. Fasilitasi stand gratis bagi UMKM terverifikasi.
                 </p>
             </div>
-            <div class="flex items-center gap-3">
-                <span class="px-3.5 py-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold text-emerald-200">
-                    <strong class="text-white text-base">{{ $totalUpcoming }}</strong> Event Dibuka
-                </span>
+
+            <div class="flex items-center gap-3 shrink-0">
+                <div class="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-emerald-950/80 backdrop-blur-md border border-emerald-500/30 text-xs font-semibold text-emerald-200 shadow-xl">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span>
+                        <strong class="text-amber-400 text-base font-black mr-1">{{ $totalUpcoming }}</strong> Event Dibuka
+                    </span>
+                </div>
             </div>
         </div>
     </div>

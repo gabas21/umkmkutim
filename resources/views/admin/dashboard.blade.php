@@ -11,7 +11,19 @@
                 <h1 class="text-2xl sm:text-3xl font-black text-white mt-1">Panel Verifikasi Diskop & UMKM Kutim</h1>
                 <p class="text-xs sm:text-sm text-slate-400">Verifikasi dokumen identitas, kelola klaim kepemilikan, dan pantau rekapitulasi data 18 kecamatan.</p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <a href="{{ route('admin.hero-slides.index') }}" class="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition">
+                    <i class="fa-solid fa-images"></i>
+                    <span>Banner Slider</span>
+                </a>
+                <a href="{{ route('admin.kategori.index') }}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-tags"></i>
+                    <span>Kategori</span>
+                </a>
+                <a href="{{ route('admin.import') }}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-file-import"></i>
+                    <span>Import Data</span>
+                </a>
                 <span class="px-3 py-1.5 rounded-lg bg-emerald-950 border border-emerald-800 text-emerald-300 text-xs font-semibold flex items-center gap-1.5">
                     <i class="fa-solid fa-user-shield text-emerald-400"></i>
                     <span>{{ Auth::user()->name }}</span>

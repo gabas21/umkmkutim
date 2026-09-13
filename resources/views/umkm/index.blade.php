@@ -4,32 +4,51 @@
 
 @section('content')
 <!-- Header Banner -->
-<section class="bg-gradient-to-b from-[#021f18] to-slate-900 text-white py-14 border-b border-emerald-950">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" data-reveal>
-        <div class="flex items-center gap-2 text-xs text-emerald-300 mb-3">
-            <a href="{{ route('home') }}" class="hover:underline">Beranda</a>
-            <span>/</span>
+<section class="relative overflow-hidden bg-[#021813] text-white py-12 sm:py-16 lg:py-20 border-b border-emerald-950/80">
+    <!-- Background Image Nyata UMKM Kutim -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+        <img src="{{ asset('umkm.png') }}" 
+             alt="Direktori Usaha & Produk Unggulan UMKM Kutai Timur" 
+             class="w-full h-full object-cover object-right md:object-center transform scale-105 transition-transform duration-1000">
+        
+        <!-- Layer Tint & Gradient Overlay untuk Kontras Teks Maksimal -->
+        <div class="absolute inset-0 bg-gradient-to-r from-[#021813] via-[#021813]/85 to-[#021813]/30 md:via-[#021813]/70 md:to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-[#021813]/90 via-transparent to-[#021813]/40"></div>
+        <div class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] [background-size:24px_24px] opacity-20"></div>
+    </div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" data-reveal>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 backdrop-blur-md border border-emerald-500/30 text-xs text-emerald-300 mb-4 shadow-xs">
+            <a href="{{ route('home') }}" class="hover:underline flex items-center gap-1.5">
+                <i class="fa-solid fa-house text-[10px]"></i>
+                <span>Beranda</span>
+            </a>
+            <span class="text-emerald-500">/</span>
             <span class="text-white font-semibold">Direktori UMKM</span>
         </div>
+
         <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
             <div class="max-w-3xl">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-400/30 text-xs text-emerald-200 mb-3 font-semibold">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-950/80 backdrop-blur-md border border-emerald-400/30 text-xs text-emerald-200 mb-3.5 font-semibold shadow-xs">
                     <i class="fa-solid fa-database text-emerald-400"></i>
                     <span>Basis Data Terpadu Diskop & UMKM Kutai Timur</span>
                 </div>
-                <h1 class="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                    Direktori Usaha & Produk Unggulan
+                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+                    Direktori Usaha & <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-100 to-amber-300">Produk Unggulan</span>
                 </h1>
-                <p class="text-sm sm:text-base text-slate-300 mt-2 leading-relaxed">
+                <p class="text-sm sm:text-base text-emerald-100/90 mt-3 leading-relaxed drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)] font-normal max-w-2xl">
                     Jelajahi profil ribuan pelaku usaha mikro, kecil, dan menengah di 18 kecamatan Kabupaten Kutai Timur. Lengkap dengan koordinat lokasi dan status verifikasi legalitas dinas.
                 </p>
             </div>
-            <div class="flex items-center gap-2.5">
-                <a href="{{ route('peta.index') }}" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white transition flex items-center gap-2">
-                    <i class="fa-solid fa-map-location-dot text-emerald-300"></i> Buka Peta Full
+
+            <div class="flex items-center gap-2.5 shrink-0">
+                <a href="{{ route('peta.index') }}" class="px-4.5 py-2.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900/80 backdrop-blur-md border border-emerald-500/30 text-xs font-bold text-white transition flex items-center gap-2 shadow-lg active:scale-95">
+                    <i class="fa-solid fa-map-location-dot text-emerald-300"></i>
+                    <span>Buka Peta Full</span>
                 </a>
-                <a href="{{ route('register') }}" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-xs font-bold text-slate-950 transition shadow-md shadow-amber-950/20 flex items-center gap-1.5">
-                    <i class="fa-solid fa-plus-circle"></i> Daftarkan Usaha
+                <a href="{{ route('register') }}" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-xs font-bold text-slate-950 transition shadow-lg shadow-amber-950/20 flex items-center gap-1.5 active:scale-95">
+                    <i class="fa-solid fa-plus-circle"></i>
+                    <span>Daftarkan Usaha</span>
                 </a>
             </div>
         </div>

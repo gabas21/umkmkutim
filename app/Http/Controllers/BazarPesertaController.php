@@ -17,40 +17,50 @@ class BazarPesertaController extends Controller
             return back()->with('error', 'Pendaftaran bazar ini telah ditutup.');
         }
 
-        $request->validate([
-            'nama_pemilik' => 'required|string|max:255',
-            'nama_usaha' => 'required|string|max:255',
-            'kategori_produk' => 'required|string|max:100',
-            'nomor_hp' => 'required|string|max:30',
-            'email' => 'nullable|email|max:100',
-            'deskripsi_produk' => 'nullable|string|max:1000',
-            'catatan' => 'nullable|string|max:500',
-        ]);
-
-        $pelakuUsahaId = null;
-        if (Auth::guard('pelaku_usaha')->check()) {
-            $pelakuUsahaId = Auth::guard('pelaku_usaha')->id();
+        if ($bazar->sisa_kuota <= 0) {
+            return back()->with('warning', 'Mohon maaf, kuota lapak bazar ini sudah penuh.');
         }
 
-        // Check if already registered with same phone
+        if (!Auth::guard('pelaku_usaha')->check()) {
+            return redirect()->route('register')->with('warning', 'Silakan buat akun terlebih dahulu untuk mendaftar peserta bazar.');
+        }
+
+        $user = Auth::guard('pelaku_usaha')->user();
+        $pelakuUsahaId = $user->id;
+
+        // Check if already registered
         $existing = BazarPeserta::where('bazar_id', $bazar->id)
-            ->where('nomor_hp', $request->nomor_hp)
+            ->where(function ($q) use ($pelakuUsahaId, $user) {
+                $q->where('pelaku_usaha_id', $pelakuUsahaId);
+                if (!empty($user->nomor_telepon)) {
+                    $q->orWhere('nomor_hp', $user->nomor_telepon);
+                }
+            })
             ->first();
 
         if ($existing) {
-            return back()->with('warning', 'Nomor telepon ini sudah terdaftar sebagai calon peserta untuk event ini.');
+            return back()->with('warning', 'Anda sudah terdaftar sebagai calon peserta untuk event bazar ini.');
         }
+
+        $umkm = method_exists($user, 'umkmTerverifikasi') ? $user->umkmTerverifikasi()->first() : null;
+        $namaPemilik = $request->input('nama_pemilik', $user->nama);
+        $namaUsaha = $request->input('nama_usaha', $umkm ? $umkm->nama_usaha : ('Usaha ' . $user->nama));
+        $kategoriProduk = $request->input('kategori_produk', $umkm && $umkm->kategori ? $umkm->kategori->nama : 'Kuliner & Aneka Produk');
+        $nomorHp = $request->input('nomor_hp', $user->nomor_telepon ?: '081200000000');
+        $email = $request->input('email', $user->email);
+        $deskripsi = $request->input('deskripsi_produk', $umkm ? $umkm->deskripsi : 'Partisipasi stan Bazar UMKM Kutai Timur');
+        $catatan = $request->input('catatan', null);
 
         BazarPeserta::create([
             'bazar_id' => $bazar->id,
             'pelaku_usaha_id' => $pelakuUsahaId,
-            'nama_pemilik' => $request->nama_pemilik,
-            'nama_usaha' => $request->nama_usaha,
-            'kategori_produk' => $request->kategori_produk,
-            'nomor_hp' => $request->nomor_hp,
-            'email' => $request->email,
-            'deskripsi_produk' => $request->deskripsi_produk,
-            'catatan' => $request->catatan,
+            'nama_pemilik' => $namaPemilik,
+            'nama_usaha' => $namaUsaha,
+            'kategori_produk' => $kategoriProduk,
+            'nomor_hp' => $nomorHp,
+            'email' => $email,
+            'deskripsi_produk' => $deskripsi,
+            'catatan' => $catatan,
             'status' => 'pending',
         ]);
 

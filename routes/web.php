@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminHeroSlideController;
 use App\Http\Controllers\AdminKategoriController;
 use App\Http\Controllers\AdminUmkmController;
 use App\Http\Controllers\AuthController;
@@ -48,8 +49,8 @@ Route::get('/pelatihan', [PelatihanController::class, 'index'])->name('pelatihan
 Route::get('/pelatihan/{slug}', [PelatihanController::class, 'show'])->name('pelatihan.show');
 Route::post('/pelatihan/{slug}/daftar', [PelatihanPesertaController::class, 'store'])->name('pelatihan.daftar');
 
-// Modul Laporan Transparansi Publik & Dashboard
-Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
+// Modul Laporan Transparansi Publik dialihkan ke Beranda (Laporan telah dipindah ke beranda)
+Route::redirect('/laporan', '/')->name('laporan.index');
 
 // Modul Survey Kepuasan Layanan
 Route::get('/survey', [SurveyController::class, 'create'])->name('survey.create');
@@ -122,4 +123,10 @@ Route::middleware(['auth:web'])->prefix('admin')->name('admin.')->group(function
     // Moderasi UMKM
     Route::get('/umkm', [AdminUmkmController::class, 'index'])->name('umkm.index');
     Route::patch('/umkm/{id}/status', [AdminUmkmController::class, 'updateStatus'])->name('umkm.status');
+
+    // Manajemen Hero Banner Slider
+    Route::get('/hero-slides', [AdminHeroSlideController::class, 'index'])->name('hero-slides.index');
+    Route::post('/hero-slides', [AdminHeroSlideController::class, 'store'])->name('hero-slides.store');
+    Route::post('/hero-slides/{id}/toggle', [AdminHeroSlideController::class, 'toggle'])->name('hero-slides.toggle');
+    Route::delete('/hero-slides/{id}', [AdminHeroSlideController::class, 'destroy'])->name('hero-slides.destroy');
 });

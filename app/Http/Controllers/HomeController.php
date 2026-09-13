@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Bazar;
 use App\Models\Berita;
+use App\Models\HeroSlide;
 use App\Models\Kategori;
 use App\Models\Pelatihan;
 use App\Models\SurveyKepuasan;
@@ -40,13 +41,13 @@ class HomeController extends Controller
             $q->where('status', 'active');
         }])->get();
 
-        // UMKM Unggulan (rating tertinggi & terpopuler, 8 item)
+        // UMKM Unggulan untuk Tabel Beranda dengan Filter, Search, dan Paginasi 10 per halaman (60 item)
         $featuredUmkm = Umkm::active()
             ->withCoordinates()
             ->with('kategori')
             ->orderByDesc('rating')
             ->orderByDesc('jumlah_review')
-            ->take(8)
+            ->take(60)
             ->get();
 
         // Metrik Seluruh Kecamatan untuk Bar Visualisasi
@@ -80,6 +81,9 @@ class HomeController extends Controller
                 ];
             });
 
+        // Slide Banner Hero (Aktif dari DB)
+        $heroSlides = HeroSlide::active()->get();
+
         return view('home', compact(
             'daftarKecamatan',
             'totalUmkm',
@@ -91,7 +95,8 @@ class HomeController extends Controller
             'featuredUmkm',
             'kecamatanStats',
             'maxKecamatan',
-            'mapPoints'
+            'mapPoints',
+            'heroSlides'
         ));
     }
 }

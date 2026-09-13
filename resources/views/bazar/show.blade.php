@@ -4,13 +4,26 @@
 
 @section('content')
 <!-- Header Section -->
-<section class="bg-gradient-to-b from-[#021f18] to-slate-900 text-white py-12 border-b border-emerald-950">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" data-reveal>
-        <div class="flex items-center gap-2 text-xs text-emerald-300 mb-3">
-            <a href="{{ route('home') }}" class="hover:underline">Beranda</a>
-            <span>/</span>
+<section class="relative overflow-hidden bg-[#021813] text-white py-12 sm:py-16 border-b border-emerald-950/80">
+    <!-- Background Image Nyata Bazar (Custom Banner atau Fallback umkm.png) -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
+        <img src="{{ $bazar->banner_url ? (filter_var($bazar->banner_url, FILTER_VALIDATE_URL) ? $bazar->banner_url : asset('storage/' . $bazar->banner_url)) : asset('umkm.png') }}" 
+             alt="{{ $bazar->nama_bazar }}" 
+             class="w-full h-full object-cover object-center transform scale-105 transition-transform duration-1000">
+        
+        <div class="absolute inset-0 bg-gradient-to-r from-[#021813] via-[#021813]/85 to-[#021813]/40 md:via-[#021813]/70 md:to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-[#021813]/90 via-transparent to-[#021813]/40"></div>
+    </div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" data-reveal>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 backdrop-blur-md border border-emerald-500/30 text-xs text-emerald-300 mb-3 shadow-xs">
+            <a href="{{ route('home') }}" class="hover:underline flex items-center gap-1.5">
+                <i class="fa-solid fa-house text-[10px]"></i>
+                <span>Beranda</span>
+            </a>
+            <span class="text-emerald-500">/</span>
             <a href="{{ route('bazar.index') }}" class="hover:underline">Bazar & Pameran</a>
-            <span>/</span>
+            <span class="text-emerald-500">/</span>
             <span class="text-white font-semibold truncate">{{ $bazar->nama_bazar }}</span>
         </div>
 
@@ -18,16 +31,16 @@
             <span class="px-3 py-1 rounded-full text-xs font-bold {{ $bazar->status === 'upcoming' ? 'bg-amber-400 text-slate-950' : ($bazar->status === 'ongoing' ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-300') }}">
                 {{ $bazar->status === 'upcoming' ? 'Pendaftaran Dibuka' : ($bazar->status === 'ongoing' ? 'Sedang Berlangsung' : 'Selesai') }}
             </span>
-            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 backdrop-blur-sm text-emerald-200 border border-white/15">
+            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950/80 backdrop-blur-md text-emerald-200 border border-emerald-500/30">
                 <i class="fa-solid fa-location-dot text-amber-400 mr-1"></i> Kec. {{ $bazar->kecamatan }}
             </span>
         </div>
 
-        <h1 class="text-2xl sm:text-4xl font-black text-white leading-tight">
+        <h1 class="text-2xl sm:text-4xl font-black text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
             {{ $bazar->nama_bazar }}
         </h1>
-        <p class="text-xs sm:text-sm text-slate-300 mt-2 flex items-center gap-2">
-            <i class="fa-solid fa-building-columns text-emerald-400"></i>
+        <p class="text-xs sm:text-sm text-emerald-100/90 mt-2 flex items-center gap-2 drop-shadow-xs">
+            <i class="fa-solid fa-building-columns text-amber-400"></i>
             <span>Penyelenggara: {{ $bazar->penyelenggara }}</span>
         </p>
     </div>
@@ -137,73 +150,81 @@
                     </div>
 
                     @if(in_array($bazar->status, ['upcoming', 'ongoing']) && $bazar->sisa_kuota > 0)
-                        <form action="{{ route('bazar.daftar', $bazar->slug) }}" method="POST" class="space-y-4">
-                            @csrf
+                        @if(Auth::guard('pelaku_usaha')->check())
+                            @php
+                                $user = Auth::guard('pelaku_usaha')->user();
+                                $isRegistered = \App\Models\BazarPeserta::where('bazar_id', $bazar->id)
+                                    ->where('pelaku_usaha_id', $user->id)
+                                    ->first();
+                            @endphp
 
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Pemilik Usaha *</label>
-                                <input type="text" name="nama_pemilik" required 
-                                       value="{{ Auth::guard('pelaku_usaha')->check() ? Auth::guard('pelaku_usaha')->user()->nama : old('nama_pemilik') }}"
-                                       placeholder="Nama lengkap sesuai KTP" 
-                                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Usaha / Merek Dagang *</label>
-                                <input type="text" name="nama_usaha" required 
-                                       value="{{ old('nama_usaha') }}"
-                                       placeholder="Contoh: Amplang Barokah Sangatta" 
-                                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Kategori Produk yang Dijual *</label>
-                                <select name="kategori_produk" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none bg-white">
-                                    <option value="">Pilih Kategori Produk</option>
-                                    <option value="Kuliner & Makanan Siap Saji">Kuliner & Makanan Siap Saji</option>
-                                    <option value="Oleh-oleh & Makanan Olahan">Oleh-oleh & Makanan Olahan (Amplang, Madu, dll)</option>
-                                    <option value="Minuman Tradisional & Kopi">Minuman Tradisional & Kopi</option>
-                                    <option value="Kriya & Kerajinan Tangan">Kriya & Kerajinan Tangan (Batik, Anyaman, Manik)</option>
-                                    <option value="Fashion & Aksesoris">Fashion & Aksesoris</option>
-                                    <option value="Agribisnis & Pertanian">Agribisnis & Pertanian</option>
-                                    <option value="Lainnya">Lainnya</option>
-                                </select>
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1">Nomor WhatsApp *</label>
-                                    <input type="text" name="nomor_hp" required 
-                                           value="{{ Auth::guard('pelaku_usaha')->check() ? Auth::guard('pelaku_usaha')->user()->nomor_telepon : old('nomor_hp') }}"
-                                           placeholder="081234567890" 
-                                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                            @if($isRegistered)
+                                <div class="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-2">
+                                    <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto text-xl">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                    </div>
+                                    <h3 class="text-sm font-bold text-emerald-900">Anda Sudah Terdaftar</h3>
+                                    <p class="text-xs text-emerald-700 leading-relaxed">
+                                        Pengajuan stan lapak Anda sedang dalam proses verifikasi oleh panitia Dinas Koperasi & UKM. Tim kami akan menghubungi via WhatsApp.
+                                    </p>
+                                    <div class="pt-2 text-[11px] font-semibold text-emerald-800">
+                                        Status: <span class="uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-200/80">{{ $isRegistered->status }}</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1">Alamat Email</label>
-                                    <input type="email" name="email" 
-                                           value="{{ Auth::guard('pelaku_usaha')->check() ? Auth::guard('pelaku_usaha')->user()->email : old('email') }}"
-                                           placeholder="opsional@domain.com" 
-                                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
+                            @else
+                                <!-- Data Pelaku Usaha Terhubung -->
+                                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-500 font-medium">Akun Terhubung:</span>
+                                        <span class="font-bold text-slate-800">{{ $user->nama }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-500 font-medium">Nomor WhatsApp:</span>
+                                        <span class="font-bold text-slate-800">{{ $user->nomor_telepon ?: '-' }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-slate-500 font-medium">Email:</span>
+                                        <span class="font-bold text-slate-800">{{ $user->email }}</span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Deskripsi Ringkas Produk</label>
-                                <textarea name="deskripsi_produk" rows="2" placeholder="Uraikan menu/barang yang akan dipajang..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">{{ old('deskripsi_produk') }}</textarea>
-                            </div>
+                                <form action="{{ route('bazar.daftar', $bazar->slug) }}" method="POST" class="space-y-4">
+                                    @csrf
+                                    <button type="submit" class="w-full py-3.5 rounded-xl font-black text-xs text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 shadow-md shadow-amber-950/20 transition active:scale-[0.98] flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-tent"></i>
+                                        <span>Daftar Peserta Bazar Sekarang</span>
+                                    </button>
+                                    <p class="text-[11px] text-slate-400 text-center leading-relaxed">
+                                        * Klik tombol di atas untuk mendaftar stan lapak secara langsung menggunakan profil usaha Anda.
+                                    </p>
+                                </form>
+                            @endif
+                        @else
+                            <!-- Belum Memiliki Akun / Belum Login -->
+                            <div class="space-y-4">
+                                <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-xs text-amber-900 leading-relaxed">
+                                    <div class="flex items-center gap-2 font-bold mb-1 text-amber-800">
+                                        <i class="fa-solid fa-circle-info"></i>
+                                        <span>Petunjuk Pendaftaran Stan</span>
+                                    </div>
+                                    Pendaftaran peserta bazar memerlukan akun Pelaku Usaha UMKM Kutai Timur agar verifikasi stan dan identitas usaha tercatat resmi di database dinas.
+                                </div>
 
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Catatan Kebutuhan (Listrik, dll)</label>
-                                <input type="text" name="catatan" value="{{ old('catatan') }}" placeholder="Contoh: Butuh colokan listrik 450W untuk blender" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none">
-                            </div>
+                                <!-- Tombol Daftar Akun Terlebih Dahulu -->
+                                <a href="{{ route('register') }}" 
+                                   class="w-full py-3.5 px-4 rounded-xl font-bold text-xs text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 shadow-md shadow-amber-950/20 transition active:scale-[0.98] flex items-center justify-center gap-2 text-center">
+                                    <i class="fa-solid fa-user-plus"></i>
+                                    <span>Belum Punya Akun? Daftar Terlebih Dahulu</span>
+                                </a>
 
-                            <button type="submit" class="w-full py-3 rounded-xl font-bold text-xs text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 shadow-md shadow-amber-950/20 transition active:scale-[0.98]">
-                                Kirim Pengajuan Stan Bazar
-                            </button>
-                            <p class="text-[11px] text-slate-400 text-center">
-                                * Panitia Diskop UKM Kutim akan menyeleksi dan menghubungi via WhatsApp.
-                            </p>
-                        </form>
+                                <!-- Tombol Sudah Punya Akun / Login -->
+                                <a href="{{ route('login') }}" 
+                                   class="w-full py-3 px-4 rounded-xl font-bold text-xs text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition active:scale-[0.98] flex items-center justify-center gap-2 text-center">
+                                    <i class="fa-solid fa-right-to-bracket"></i>
+                                    <span>Sudah Memiliki Akun? Masuk / Login</span>
+                                </a>
+                            </div>
+                        @endif
                     @else
                         <div class="p-6 text-center rounded-2xl bg-slate-50 border border-slate-200">
                             <i class="fa-solid fa-lock text-3xl text-slate-400 mb-2"></i>
