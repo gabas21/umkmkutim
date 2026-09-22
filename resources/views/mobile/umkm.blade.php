@@ -40,61 +40,20 @@
             margin: 0;
             overflow-x: hidden;
         }
-        body { background: #edf4ef; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-        .phone-shell { width: min(100%, 390px); max-width: 100%; min-height: 840px; background: #f8faf8; border-radius: 32px; box-shadow: 0 30px 80px rgba(17, 24, 39, 0.12); overflow: hidden; border: 1px solid rgba(17, 24, 39, 0.04); }
-        .status-bar { height: 28px; background: rgba(255,255,255,0.7); backdrop-filter: blur(12px); }
-        .bottom-nav { background: rgba(255,255,255,0.0); backdrop-filter: blur(12px); border-top: 0; box-shadow: none; }
-        .nav-pill { border-radius: 18px; padding: 8px 6px 10px; transition: all .2s ease; min-height: 72px; }
-        .nav-pill.active { color: #111827; }
-        .nav-icon { width: 42px; height: 42px; border-radius: 15px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #6b7280; transition: all .2s ease; box-shadow: inset 0 0 0 1px rgba(17,24,39,0.02); }
-        .nav-pill.active .nav-icon { background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%); color: white; box-shadow: 0 12px 24px rgba(22, 163, 74, 0.26); }
-        .nav-label { display: block; margin-top: 6px; font-size: 9px; line-height: 1; letter-spacing: 0.03em; text-transform: uppercase; }
+        body {
+            background: #edf4ef;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
         .chip { background: rgba(255,255,255,0.8); border: 1px solid rgba(17,24,39,0.04); box-shadow: 0 8px 18px rgba(15,23,42,0.04); }
         .card-soft { background: rgba(255,255,255,0.88); border: 1px solid rgba(17,24,39,0.04); box-shadow: 0 14px 32px rgba(15,23,42,0.05); }
         .section-label { letter-spacing: 0.12em; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @media (max-width: 420px) {
-            body {
-                padding: 0;
-            }
-            .phone-shell {
-                width: 100%;
-                max-width: 100%;
-                min-height: 100vh;
-                border-radius: 0;
-                box-shadow: none;
-                border-left: 0;
-                border-right: 0;
-            }
-            .status-bar {
-                padding-left: 1rem;
-                padding-right: 1rem;
-            }
-            nav.bottom-nav {
-                width: 100%;
-                max-width: 100%;
-                left: 0;
-                transform: none;
-                border-radius: 0;
-            }
-        }
     </style>
 </head>
-<body class="min-h-screen w-full overflow-x-hidden flex items-center justify-center p-2 sm:p-4 md:p-8">
-    <div class="flex w-full justify-center">
-        <div class="phone-shell">
-            <div class="status-bar flex items-center justify-between px-5 text-[11px] font-semibold text-slate-700">
-                <span>09:41</span>
-                <div class="flex items-center gap-1.5">
-                    <span class="h-1.5 w-1.5 rounded-full bg-slate-700"></span>
-                    <span class="h-1.5 w-1.5 rounded-full bg-slate-700"></span>
-                    <span class="h-1.5 w-1.5 rounded-full bg-slate-700"></span>
-                    <span class="h-2.5 w-5 rounded-full border border-slate-700"></span>
-                </div>
-            </div>
-
-            <main class="px-4 pb-24 pt-3">
+<body class="min-h-screen w-full overflow-x-hidden bg-[#edf4ef] text-slate-800">
+    <div class="min-h-screen w-full bg-white">
+        <main class="px-4 pb-24 pt-3">
                 <header class="flex items-center justify-between mb-4">
                     <div>
                         <p class="section-label text-[9px] font-semibold text-brand-700">UMKM</p>
@@ -224,52 +183,7 @@
                 </section>
             </main>
 
-            <nav class="bottom-nav fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] px-3 pb-3 pt-2">
-                <div class="grid grid-cols-5 gap-2 rounded-[30px] bg-white px-2 py-2 shadow-[0_18px_40px_rgba(15,23,42,0.12)] border border-slate-200/80">
-                    <a href="{{ route('preview.mobile') }}" class="nav-pill flex flex-col items-center justify-center text-[10px] {{ request()->routeIs('preview.mobile') ? 'active font-bold text-slate-800' : 'font-medium text-slate-500' }}">
-                        <span class="nav-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
-                                <path d="M3 10.5 12 3l9 7.5"/>
-                                <path d="M5 9.5V20h14V9.5"/>
-                            </svg>
-                        </span>
-                        <span class="nav-label">Home</span>
-                    </a>
-                    <a href="{{ route('preview.mobile.umkm') }}" class="nav-pill flex flex-col items-center justify-center text-[10px] {{ request()->routeIs('preview.mobile.umkm') ? 'active font-bold text-slate-800' : 'font-medium text-slate-500' }}">
-                        <span class="nav-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
-                                <path d="M7 7h10l2 11H5l2-11Z"/>
-                                <path d="M9 7V5a3 3 0 0 1 6 0v2"/>
-                            </svg>
-                        </span>
-                        <span class="nav-label">UMKM</span>
-                    </a>
-                    <a href="{{ route('preview.mobile.peta') }}" class="nav-pill flex flex-col items-center justify-center text-[10px] {{ request()->routeIs('preview.mobile.peta') ? 'active font-bold text-slate-800' : 'font-medium text-slate-500' }}">
-                        <span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5L9 3l6 3 6-3v13l-6 3-6-3-6 3V6.5z"/><path d="M9 3v13M15 6v11"/></svg></span>
-                        <span class="nav-label">Peta</span>
-                    </a>
-                    <a href="{{ route('preview.mobile.promo') }}" class="nav-pill flex flex-col items-center justify-center text-[10px] {{ request()->routeIs('preview.mobile.promo') ? 'active font-bold text-slate-800' : 'font-medium text-slate-500' }}">
-                        <span class="nav-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
-                                <path d="M18 8h-1l-2 2"/>
-                                <path d="M7 8h10v8H7z"/>
-                                <path d="M8 12h8"/>
-                            </svg>
-                        </span>
-                        <span class="nav-label">Promo</span>
-                    </a>
-                    <a href="{{ route('preview.mobile.akun') }}" class="nav-pill flex flex-col items-center justify-center text-[10px] {{ request()->routeIs('preview.mobile.akun') ? 'active font-bold text-slate-800' : 'font-medium text-slate-500' }}">
-                        <span class="nav-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
-                                <circle cx="12" cy="8" r="4"/>
-                                <path d="M4 20c2-3 5-4 8-4s6 1 8 4"/>
-                            </svg>
-                        </span>
-                        <span class="nav-label">Akun</span>
-                    </a>
-                </div>
-            </nav>
-        </div>
+@include('mobile.partials.bottom-nav')
     </div>
 </body>
 </html>
