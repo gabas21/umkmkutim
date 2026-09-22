@@ -86,7 +86,7 @@ class ImportDinasUmkmJob implements ShouldQueue
                 'alamat' => $row['alamat'] ?? "Jl. Poros {$matchedKecamatan}, Kutai Timur",
                 'kecamatan' => $matchedKecamatan,
                 'kelurahan_desa' => $row['kelurahan_desa'] ?? null,
-                'location' => DB::raw("ST_SRID(POINT({$lng}, {$lat}), 4326)"),
+                'location' => DB::raw("ST_GeomFromText('POINT({$lng} {$lat})', 4326)"),
                 'telepon' => $row['telepon'] ?? null,
                 'email' => $row['email'] ?? null,
                 'instagram' => $row['instagram'] ?? null,

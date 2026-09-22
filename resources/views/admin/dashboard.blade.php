@@ -1,8 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Panel Administrator Dinas — Verifikasi Klaim UMKM Kutim')
 
-@section('content')
+@section('admin-content')
 <div class="bg-slate-900 text-white py-10 border-b border-slate-800">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -62,6 +62,29 @@
             <div class="text-xs text-slate-500 font-medium">Sektor Komoditas</div>
             <div class="text-3xl font-black text-slate-900 mt-1">{{ $totalKategori }}</div>
             <span class="text-[11px] text-slate-400">Kategori Usaha</span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-6">
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <div class="text-xs text-slate-500">UMKM Aktif</div>
+            <div class="mt-2 text-2xl font-black text-slate-900">{{ number_format($umkmAktif) }}</div>
+            <span class="text-[11px] text-slate-400">Status publik aktif</span>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-sky-200 shadow-sm bg-sky-50/40">
+            <div class="text-xs text-sky-700">Menunggu Review</div>
+            <div class="mt-2 text-2xl font-black text-sky-900">{{ number_format($umkmMenungguVerifikasi) }}</div>
+            <span class="text-[11px] text-sky-600">UMKM belum final</span>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-violet-200 shadow-sm bg-violet-50/40">
+            <div class="text-xs text-violet-700">Event Terbuka</div>
+            <div class="mt-2 text-2xl font-black text-violet-900">{{ number_format($eventOpen) }}</div>
+            <span class="text-[11px] text-violet-600">Dari {{ number_format($totalEvent) }} total</span>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-emerald-200 shadow-sm bg-emerald-50/40">
+            <div class="text-xs text-emerald-700">Berita Dipublikasi</div>
+            <div class="mt-2 text-2xl font-black text-emerald-900">{{ number_format($newsPublished) }}</div>
+            <span class="text-[11px] text-emerald-600">{{ number_format($totalParticipant) }} peserta event</span>
         </div>
     </div>
 
@@ -134,6 +157,60 @@
                 <p class="text-xs text-slate-500">Tidak ada pengajuan klaim baru yang menunggu verifikasi saat ini.</p>
             </div>
         @endif
+    </div>
+
+    <div class="grid xl:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+                <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-column text-violet-600"></i> Komoditas Terpopuler
+                </h2>
+                <span class="text-[10px] uppercase tracking-wide text-slate-500">Top 5</span>
+            </div>
+            <div class="p-0 overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-600">
+                    <thead class="bg-slate-50 text-slate-700 uppercase font-bold text-[11px]">
+                        <tr>
+                            <th class="p-4">Kategori</th>
+                            <th class="p-4">Jumlah UMKM</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach($kategoriTerpopuler as $kategori)
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="p-4 font-bold text-slate-900">{{ $kategori->nama }}</td>
+                                <td class="p-4 font-mono font-semibold text-violet-700">{{ number_format($kategori->umkm_count) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+                <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> Aktivitas Terbaru
+                </h2>
+                <span class="text-[10px] uppercase tracking-wide text-slate-500">Log sistem</span>
+            </div>
+            <div class="p-4 space-y-3 max-h-[320px] overflow-y-auto">
+                @forelse($recentActivity as $activity)
+                    <div class="flex gap-3 rounded-xl bg-slate-50 p-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-900 text-white text-[10px] flex items-center justify-center font-bold uppercase">
+                            {{ substr($activity->user?->name ?? 'S', 0, 1) }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-semibold text-slate-800 text-xs">{{ $activity->user?->name ?? 'Sistem' }}</div>
+                            <div class="text-[11px] text-slate-600 mt-1">{{ $activity->description }}</div>
+                            <div class="text-[10px] font-mono text-slate-400 mt-1">{{ $activity->created_at?->format('d/m/Y H:i') ?? '-' }}</div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="text-xs text-slate-500">Belum ada aktivitas terbaru.</div>
+                @endforelse
+            </div>
+        </div>
     </div>
 
     <!-- Section: Rekap Wilayah per Kecamatan -->

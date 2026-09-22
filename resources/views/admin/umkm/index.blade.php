@@ -1,8 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Moderasi Data UMKM — Panel Admin')
 
-@section('content')
+@section('admin-content')
 <div class="bg-slate-900 text-white py-8 border-b border-slate-800">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center gap-2 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition mb-3">
@@ -16,8 +16,8 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
     <!-- Filter Toolbar -->
     <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-        <form action="{{ route('admin.umkm.index') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
-            <div class="lg:col-span-2 relative">
+        <form action="{{ route('admin.umkm.index') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3 text-xs">
+            <div class="xl:col-span-2 relative">
                 <i class="fa-solid fa-magnifying-glass text-slate-400 absolute left-3.5 top-3"></i>
                 <input type="text" name="q" value="{{ request('q') }}" placeholder="Cari nama usaha atau alamat..." class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
             </div>
@@ -42,11 +42,21 @@
                 <i class="fa-solid fa-chevron-down text-slate-400 absolute right-3 top-3 text-[10px] pointer-events-none"></i>
             </div>
 
-            <div class="flex gap-2">
+            <div class="relative">
+                <select name="status_klaim" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none appearance-none">
+                    <option value="">Semua Status Klaim</option>
+                    <option value="terverifikasi" {{ request('status_klaim') == 'terverifikasi' ? 'selected' : '' }}>Terverifikasi</option>
+                    <option value="menunggu_verifikasi" {{ request('status_klaim') == 'menunggu_verifikasi' ? 'selected' : '' }}>Menunggu Verifikasi</option>
+                    <option value="belum_diklaim" {{ request('status_klaim') == 'belum_diklaim' ? 'selected' : '' }}>Belum Diklaim</option>
+                </select>
+                <i class="fa-solid fa-chevron-down text-slate-400 absolute right-3 top-3 text-[10px] pointer-events-none"></i>
+            </div>
+
+            <div class="flex gap-2 xl:col-span-1">
                 <button type="submit" class="flex-grow py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition">
                     Filter
                 </button>
-                @if(request()->hasAny(['q', 'kecamatan', 'status']))
+                @if(request()->hasAny(['q', 'kecamatan', 'status', 'status_klaim']))
                     <a href="{{ route('admin.umkm.index') }}" class="py-2 px-3 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center">
                         <i class="fa-solid fa-rotate-left"></i>
                     </a>
@@ -110,7 +120,10 @@
                             </td>
                             <td class="p-4 text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    <a href="{{ route('umkm.show', $item->slug) }}" target="_blank" class="p-1.5 text-slate-500 hover:text-emerald-600" title="Buka Detail">
+                                    <a href="{{ route('admin.umkm.show', $item->id) }}" class="p-1.5 text-slate-500 hover:text-emerald-600" title="Lihat Detail">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </a>
+                                    <a href="{{ route('umkm.show', $item->slug) }}" target="_blank" class="p-1.5 text-slate-500 hover:text-emerald-600" title="Buka Detail Publik">
                                         <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                     </a>
 

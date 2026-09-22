@@ -6,20 +6,8 @@
 <!-- ========================================================================== -->
 <!-- 1. HERO SLIDER BANNER RESMI PEMKAB KUTAI TIMUR                            -->
 <!-- ========================================================================== -->
-<section class="relative overflow-hidden bg-[#021813] border-b border-emerald-950/80 pt-6 pb-8 sm:pt-7 sm:pb-10 lg:pt-8 lg:pb-12">
+<section class="relative overflow-hidden bg-white border-b border-slate-200/80 pt-6 pb-8 sm:pt-7 sm:pb-10 lg:pt-8 lg:pb-12">
 
-    <!-- Background Image Nyata & Layer Hijau Pemanis (Terang & Seimbang) -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none select-none z-0">
-        <img src="{{ asset('Kantor_Bupati_Kutai_Timur.jpg') }}" 
-             alt="Kawasan Pusat Pemerintahan Bukit Pelangi Sangatta - Kutai Timur" 
-             class="w-full h-full object-cover object-[center_32%] brightness-[0.84] contrast-[1.08] saturate-[1.05] scale-105 transform transition-transform duration-1000">
-        
-        <!-- Layer Tint Hijau Pemanis yang Luminous & Tidak Menggelapkan Sisi Lainnya -->
-        <div class="absolute inset-0 bg-[#03241b]/50"></div>
-        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_35%,rgba(16,185,129,0.05)_0%,rgba(4,38,30,0.22)_40%,rgba(2,24,19,0.65)_100%)]"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-[#021813]/80 via-transparent to-[#021813]/40"></div>
-        <div class="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.03)_1px,transparent_1px)] [background-size:32px_32px] opacity-20"></div>
-    </div>
 
     <!-- Container Utama -->
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -33,10 +21,8 @@
                 <span class="text-slate-300 font-normal">Dinas Koperasi & UKM</span>
             </div>
 
-            <h1 class="text-[26px] sm:text-[38px] lg:text-[50px] font-black tracking-tight text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
-                <span class="block">Ekosistem Digital</span>
-                <span class="inline-block text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-100 to-amber-300">UMKM</span>
-                <span class="block text-white">Kutai Timur</span>
+            <h1 class="text-[26px] sm:text-[38px] lg:text-[50px] font-black tracking-tight text-slate-900 leading-tight">
+                <span class="block">UMKM PRO KUTIM</span>
             </h1>
         </div>
 
@@ -245,7 +231,7 @@
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 sm:mb-8" data-reveal>
                 <div>
                     <div class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-3 py-1 rounded-full mb-2 shadow-xs">
-                        <i class="fa-solid fa-bolt-lightning text-amber-500 text-[11px]"></i>
+                        @include('icon-fallback', ['name' => 'bolt-lightning', 'class' => 'text-amber-500 text-[11px]'])
                         <span>Akses Cepat Layanan Mandiri</span>
                     </div>
                     <h2 class="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
@@ -403,7 +389,7 @@
                         </div>
                         <div class="text-xs text-slate-500 mt-2.5 flex items-center gap-1.5 leading-none">
                             <span class="inline-flex items-center text-[10.5px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md border border-emerald-300/60 shadow-2xs">
-                                <i class="fa-solid fa-arrow-trend-up text-[9px] mr-1"></i> 12.4%
+                                @include('icon-fallback', ['name' => 'arrow-trend-up', 'class' => 'text-[9px] mr-1']) 12.4%
                             </span>
                             <span class="font-medium text-[11px] text-slate-500">pertumbuhan tahunan</span>
                         </div>
@@ -436,7 +422,7 @@
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-xs sm:text-[13px] font-bold text-slate-500 group-hover:text-slate-800 transition">Kecamatan</span>
                         <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center text-sm group-hover:bg-amber-500 group-hover:text-white group-hover:border-amber-500 group-hover:scale-105 transition-all duration-300 shadow-2xs">
-                            <i class="fa-solid fa-map"></i>
+                            @include('icon-fallback', ['name' => 'map', 'class' => ''])
                         </div>
                     </div>
                     <div>
@@ -537,7 +523,7 @@
                     <div class="py-4 flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             <div class="w-9 h-9 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center text-sm">
-                                <i class="fa-solid fa-arrow-trend-up text-emerald-600"></i>
+                                @include('icon-fallback', ['name' => 'arrow-trend-up', 'class' => 'text-emerald-600'])
                             </div>
                             <div>
                                 <div class="text-sm font-bold text-slate-800">Rata - Rata Pendapatan/Bulan</div>
@@ -591,7 +577,7 @@
                     <div class="py-4 flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             <div class="w-9 h-9 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center text-sm">
-                                <i class="fa-solid fa-person-digging text-amber-600"></i>
+                                @include('icon-fallback', ['name' => 'person-digging', 'class' => 'text-amber-600'])
                             </div>
                             <div>
                                 <div class="text-sm font-bold text-slate-800">Total Tenaga Kerja</div>
@@ -809,7 +795,7 @@
                 <button @click="activeTab = 'kecamatan'" 
                         :class="activeTab === 'kecamatan' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-medium'"
                         class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs transition flex items-center justify-center gap-2 cursor-pointer">
-                    <i class="fa-solid fa-map-location-dot"></i>
+                    @include('icon-fallback', ['name' => 'map-location-dot', 'class' => ''])
                     <span>18 Kecamatan</span>
                 </button>
                 <button @click="activeTab = 'sektor'" 

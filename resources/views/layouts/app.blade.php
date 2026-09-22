@@ -147,7 +147,7 @@
                     <img src="{{ asset('logo1.png') }}" alt="Logo Kabupaten Kutai Timur" class="h-12 w-auto object-contain group-hover:scale-105 transition duration-200 drop-shadow-sm">
                     <div>
                         <div class="flex items-center gap-1.5">
-                            <span class="text-xl font-black tracking-tight text-slate-900">UMKM<span class="text-emerald-700">KUTIM</span></span>
+                            <span class="text-xl font-black tracking-tight text-slate-900">UMKM PRO <span class="text-emerald-700">KUTIM</span></span>
                             <span class="px-1.5 py-0.5 text-[10px] font-bold bg-amber-100/90 text-amber-800 border border-amber-300/80 rounded tracking-wider">KUTAI TIMUR</span>
                         </div>
                         <p class="text-xs text-slate-500 font-medium">Ekosistem & Direktori Digital Usaha Daerah</p>

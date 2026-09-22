@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
+use App\Models\Event;
+use App\Models\EventParticipant;
 use App\Models\Kategori;
 use App\Models\KlaimUsaha;
+use App\Models\News;
 use App\Models\Umkm;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,9 +19,16 @@ class AdminDashboardController extends Controller
     public function index()
     {
         $totalUmkm = Umkm::count();
+        $umkmAktif = Umkm::where('status', 'active')->count();
         $klaimMenunggu = KlaimUsaha::where('status', 'menunggu')->count();
         $umkmTerverifikasi = Umkm::where('status_klaim', 'terverifikasi')->count();
+        $umkmMenungguVerifikasi = Umkm::where('status_klaim', 'menunggu_verifikasi')->count();
         $totalKategori = Kategori::count();
+        $totalEvent = Event::count();
+        $eventOpen = Event::where('status', 'open')->count();
+        $totalParticipant = EventParticipant::count();
+        $newsPublished = News::where('status', 'published')->count();
+        $totalAdmin = User::whereIn('role', ['admin', 'superadmin'])->count();
 
         // Daftar klaim menunggu review admin
         $pendingKlaimList = KlaimUsaha::where('status', 'menunggu')
@@ -30,13 +42,32 @@ class AdminDashboardController extends Controller
             ->orderByDesc('total_umkm')
             ->get();
 
+        $kategoriTerpopuler = Kategori::withCount('umkm')
+            ->orderByDesc('umkm_count')
+            ->limit(5)
+            ->get();
+
+        $recentActivity = ActivityLog::with('user')
+            ->latest('created_at')
+            ->limit(8)
+            ->get();
+
         return view('admin.dashboard', compact(
             'totalUmkm',
+            'umkmAktif',
             'klaimMenunggu',
             'umkmTerverifikasi',
+            'umkmMenungguVerifikasi',
             'totalKategori',
+            'totalEvent',
+            'eventOpen',
+            'totalParticipant',
+            'newsPublished',
+            'totalAdmin',
             'pendingKlaimList',
-            'rekapKecamatan'
+            'rekapKecamatan',
+            'kategoriTerpopuler',
+            'recentActivity'
         ));
     }
 
@@ -63,6 +94,13 @@ class AdminDashboardController extends Controller
             'status_klaim' => 'terverifikasi'
         ]);
 
+        ActivityLog::record(
+            'klaim',
+            'approve',
+            "Menyetujui klaim usaha '{$klaim->umkm->nama_usaha}' untuk pelaku usaha {$klaim->pelakuUsaha?->nama}. Catatan: " . ($request->catatan_admin ?? 'Dokumen valid.'),
+            $admin->id
+        );
+
         return redirect()->route('admin.dashboard')->with('success', "Klaim untuk '{$klaim->umkm->nama_usaha}' berhasil DISETUJUI. Hak akses pengelolaan telah diberikan kepada pemilik.");
     }
 
@@ -88,6 +126,13 @@ class AdminDashboardController extends Controller
         $klaim->umkm()->update([
             'status_klaim' => 'belum_diklaim'
         ]);
+
+        ActivityLog::record(
+            'klaim',
+            'reject',
+            "Menolak klaim usaha '{$klaim->umkm->nama_usaha}' dengan alasan: {$request->catatan_admin}",
+            $admin->id
+        );
 
         return redirect()->route('admin.dashboard')->with('warning', "Klaim untuk '{$klaim->umkm->nama_usaha}' telah DITOLAK dengan catatan revisi.");
     }

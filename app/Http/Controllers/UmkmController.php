@@ -198,7 +198,7 @@ class UmkmController extends Controller
             'alamat' => $validated['alamat'],
             'kecamatan' => $validated['kecamatan'],
             'kelurahan_desa' => $validated['kelurahan_desa'] ?? null,
-            'location' => \Illuminate\Support\Facades\DB::raw("ST_SRID(POINT({$lng}, {$lat}), 4326)"),
+            'location' => \Illuminate\Support\Facades\DB::raw("ST_GeomFromText('POINT({$lng} {$lat})', 4326)"),
             'telepon' => $validated['telepon'] ?? null,
             'email' => $validated['email'] ?? null,
             'instagram' => $validated['instagram'] ?? null,

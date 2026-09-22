@@ -76,9 +76,18 @@ class AuthController extends Controller
 
     public function showAdminLogin()
     {
-        if (Auth::guard('web')->check() && Auth::user()->isAdmin()) {
-            return redirect()->route('admin.dashboard');
+        if (Auth::guard('web')->check()) {
+            $user = Auth::user();
+
+            if ($user->isSuperAdmin()) {
+                return redirect()->route('superadmin.dashboard');
+            }
+
+            if ($user->isAdmin()) {
+                return redirect()->route('admin.dashboard');
+            }
         }
+
         return view('auth.login-admin');
     }
 
@@ -90,10 +99,18 @@ class AuthController extends Controller
         ]);
 
         if (Auth::guard('web')->attempt($credentials, $request->boolean('remember'))) {
-            if (Auth::user()->isAdmin()) {
+            $user = Auth::user();
+
+            if ($user->isSuperAdmin()) {
+                $request->session()->regenerate();
+                return redirect()->intended(route('superadmin.dashboard'))->with('success', 'Login Superadmin berhasil.');
+            }
+
+            if ($user->isAdmin()) {
                 $request->session()->regenerate();
                 return redirect()->intended(route('admin.dashboard'))->with('success', 'Login Admin berhasil.');
             }
+
             Auth::guard('web')->logout();
             return back()->withErrors(['email' => 'Anda tidak memiliki hak akses administrator.']);
         }

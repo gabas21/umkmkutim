@@ -1,8 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.pelaku')
 
 @section('title', 'Dashboard Pelaku Usaha — UMKM Kutim')
 
-@section('content')
+@section('pelaku-content')
 <div class="bg-slate-900 text-white py-10 border-b border-slate-800">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -87,9 +87,12 @@
                             </p>
                         </div>
 
-                        <div class="pt-3 border-t border-slate-100 flex items-center gap-2">
+        <div class="pt-3 border-t border-slate-100 flex items-center gap-2">
                             <a href="{{ route('umkm.show', $item->slug) }}" class="flex-grow py-2 text-center text-xs font-bold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
                                 Lihat Publik
+                            </a>
+                            <a href="{{ route('dashboard.pelaku.layanan.index', $item->id) }}" class="py-2 px-3 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-900 text-white transition flex items-center gap-1" title="Kelola Layanan/Produk">
+                                <i class="fa-solid fa-boxes-stacked"></i>
                             </a>
                             <a href="{{ route('dashboard.pelaku.edit', $item->id) }}" class="py-2 px-3 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1">
                                 <i class="fa-solid fa-pen-to-square"></i> Edit Profil

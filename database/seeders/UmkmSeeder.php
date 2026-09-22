@@ -122,7 +122,7 @@ class UmkmSeeder extends Seeder
                 'alamat'          => $alamat,
                 'kecamatan'       => $kecamatan,
                 'kelurahan_desa'  => null,
-                'location'        => DB::raw("ST_SRID(POINT({$lng}, {$lat}), 4326)"),
+                'location'        => DB::raw("ST_GeomFromText('POINT({$lng} {$lat})', 4326)"),
                 'telepon'         => $telepon,
                 'email'           => null,
                 'instagram'       => null,
@@ -242,7 +242,7 @@ class UmkmSeeder extends Seeder
                     'alamat'          => "Jl. Utama RT 0{$i}, Kecamatan {$kecamatan}, Kutai Timur",
                     'kecamatan'       => $kecamatan,
                     'kelurahan_desa'  => null,
-                    'location'        => DB::raw("ST_SRID(POINT({$lng}, {$lat}), 4326)"),
+                    'location'        => DB::raw("ST_GeomFromText('POINT({$lng} {$lat})', 4326)"),
                     'telepon'         => '08' . mt_rand(1111111111, 9999999999),
                     'email'           => null,
                     'instagram'       => null,
@@ -295,8 +295,8 @@ class UmkmSeeder extends Seeder
         DB::statement("
             INSERT INTO umkm_grid_cluster (grid_lat, grid_lng, jumlah_umkm, terverifikasi_count, kecamatan, sample_umkm_id, created_at, updated_at)
             SELECT 
-                ROUND(ST_Latitude(location), 2) as grid_lat,
-                ROUND(ST_Longitude(location), 2) as grid_lng,
+                ROUND(" . Umkm::latitudeExpression() . ", 2) as grid_lat,
+                ROUND(" . Umkm::longitudeExpression() . ", 2) as grid_lng,
                 COUNT(*) as jumlah_umkm,
                 SUM(CASE WHEN status_klaim = 'terverifikasi' THEN 1 ELSE 0 END) as terverifikasi_count,
                 SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT kecamatan ORDER BY kecamatan SEPARATOR ', '), ', ', 1) as kecamatan,

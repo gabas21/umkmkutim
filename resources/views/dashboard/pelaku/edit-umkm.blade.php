@@ -1,8 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.pelaku')
 
 @section('title', 'Edit Profil Usaha — ' . $umkm->nama_usaha)
 
-@section('content')
+@section('pelaku-content')
 <div class="bg-slate-900 text-white py-8 border-b border-slate-800">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <a href="{{ route('dashboard.pelaku') }}" class="inline-flex items-center gap-2 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition mb-3">
@@ -43,16 +43,22 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-1.5">
                     <label class="block text-xs font-bold text-slate-700">Kecamatan <span class="text-rose-500">*</span></label>
-                    <select name="kecamatan" required class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    <select id="kecamatan-select" name="kecamatan_id" required class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <option value="">-- Pilih Kecamatan --</option>
                         @foreach($daftarKecamatan as $kec)
-                            <option value="{{ $kec }}" {{ old('kecamatan', $umkm->kecamatan) == $kec ? 'selected' : '' }}>{{ $kec }}</option>
+                            <option value="{{ $kec->id }}" {{ (old('kecamatan_id', $umkm->kecamatan_id) == $kec->id) ? 'selected' : '' }}>{{ $kec->name }}</option>
                         @endforeach
                     </select>
                 </div>
 
                 <div class="space-y-1.5">
                     <label class="block text-xs font-bold text-slate-700">Desa / Kelurahan</label>
-                    <input type="text" name="kelurahan_desa" value="{{ old('kelurahan_desa', $umkm->kelurahan_desa) }}" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    <select id="kelurahan-select" name="kelurahan_id" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <option value="">-- Pilih Kelurahan --</option>
+                        @foreach($initialKelurahan as $kel)
+                            <option value="{{ $kel->id }}" {{ (old('kelurahan_id', $umkm->kelurahan_id) == $kel->id) ? 'selected' : '' }}>{{ $kel->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
 
@@ -76,6 +82,48 @@
                 </div>
             </div>
 
+            @push('scripts')
+            <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const kecSelect = document.getElementById('kecamatan-select');
+                const kelSelect = document.getElementById('kelurahan-select');
+
+                async function loadKelurahan(kecamatanId) {
+                    kelSelect.innerHTML = '<option value="">Memuat...</option>';
+                    try {
+                        const perPage = 100;
+                        const url = `/api/kutim/kelurahans?kecamatan_id=${kecamatanId}&per_page=${perPage}`;
+                        const res = await fetch(url);
+                        if (!res.ok) throw new Error('Gagal memuat kelurahan');
+                        const data = await res.json();
+                        const items = data.data || data.data ?? data; // handle paginator or plain
+
+                        kelSelect.innerHTML = '<option value="">-- Pilih Kelurahan --</option>';
+                        items.forEach(item => {
+                            const opt = document.createElement('option');
+                            opt.value = item.id;
+                            opt.textContent = item.name;
+                            kelSelect.appendChild(opt);
+                        });
+                    } catch (err) {
+                        kelSelect.innerHTML = '<option value="">-- Gagal memuat --</option>';
+                        console.error(err);
+                    }
+                }
+
+                if (kecSelect && kelSelect) {
+                    kecSelect.addEventListener('change', function () {
+                        const val = this.value;
+                        if (val) loadKelurahan(val);
+                        else {
+                            kelSelect.innerHTML = '<option value="">-- Pilih Kelurahan --</option>';
+                        }
+                    });
+                }
+            });
+            </script>
+            @endpush
+
             <!-- Kontak & Medsos -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="space-y-1.5">
@@ -94,6 +142,9 @@
 
             <!-- Action Buttons -->
             <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                <a href="{{ route('dashboard.pelaku.layanan.index', $umkm->id) }}" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition flex items-center gap-2">
+                    <i class="fa-solid fa-boxes-stacked"></i> Kelola Layanan/Produk
+                </a>
                 <a href="{{ route('dashboard.pelaku') }}" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition">
                     Batal
                 </a>

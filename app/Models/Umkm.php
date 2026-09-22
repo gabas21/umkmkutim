@@ -19,7 +19,9 @@ class Umkm extends Model
         'deskripsi',
         'alamat',
         'kecamatan',
+        'kecamatan_id',
         'kelurahan_desa',
+        'kelurahan_id',
         'location',
         'telepon',
         'email',
@@ -36,6 +38,10 @@ class Umkm extends Model
         'status',
     ];
 
+    protected $hidden = [
+        'location',
+    ];
+
     protected $casts = [
         'foto_galeri' => 'array',
         'jam_operasional' => 'array',
@@ -48,6 +54,16 @@ class Umkm extends Model
     public function kategori()
     {
         return $this->belongsTo(Kategori::class, 'kategori_id');
+    }
+
+    public function kecamatan()
+    {
+        return $this->belongsTo(Kecamatan::class, 'kecamatan_id');
+    }
+
+    public function kelurahan()
+    {
+        return $this->belongsTo(Kelurahan::class, 'kelurahan_id');
     }
 
     public function klaimUsaha()
@@ -75,6 +91,26 @@ class Umkm extends Model
         return $this->hasMany(LaporanKunjungan::class, 'umkm_id');
     }
 
+    public function documents()
+    {
+        return $this->hasMany(UmkmDocument::class, 'umkm_id');
+    }
+
+    public function photos()
+    {
+        return $this->hasMany(UmkmPhoto::class, 'umkm_id');
+    }
+
+    public function verifications()
+    {
+        return $this->hasMany(Verification::class, 'umkm_id');
+    }
+
+    public function latestVerification()
+    {
+        return $this->hasOne(Verification::class, 'umkm_id')->latestOfMany();
+    }
+
     // Query Scopes
     public function scopeActive($query)
     {
@@ -83,13 +119,24 @@ class Umkm extends Model
 
     public function scopeWithCoordinates($query)
     {
-        return $query->selectRaw("umkm.*, ST_Latitude(location) as latitude, ST_Longitude(location) as longitude");
+        return $query->selectRaw(sprintf(
+            'umkm.*, %s as latitude, %s as longitude',
+            static::latitudeExpression(),
+            static::longitudeExpression()
+        ));
     }
 
     public function scopeNearby($query, $lat, $lng, $maxMeters = 10000)
     {
-        return $query->selectRaw("umkm.*, ST_Latitude(location) as latitude, ST_Longitude(location) as longitude, ST_Distance_Sphere(location, ST_SRID(POINT(?, ?), 4326)) AS jarak_meter", [$lat, $lng])
-            ->whereRaw("ST_Distance_Sphere(location, ST_SRID(POINT(?, ?), 4326)) <= ?", [$lat, $lng, $maxMeters])
+        $latitudeExpression = static::latitudeExpression();
+        $longitudeExpression = static::longitudeExpression();
+        $pointWkt = sprintf('POINT(%s %s)', $lng, $lat);
+
+        return $query->selectRaw(
+            "umkm.*, {$latitudeExpression} as latitude, {$longitudeExpression} as longitude, ST_Distance_Sphere(location, ST_GeomFromText(?, 4326)) AS jarak_meter",
+            [$pointWkt]
+        )
+            ->whereRaw('ST_Distance_Sphere(location, ST_GeomFromText(?, 4326)) <= ?', [$pointWkt, $maxMeters])
             ->orderBy('jarak_meter');
     }
 
@@ -112,6 +159,16 @@ class Umkm extends Model
     // Helper static method for Point geometry
     public static function makePoint($lat, $lng)
     {
-        return DB::raw("ST_SRID(POINT({$lng}, {$lat}), 4326)");
+        return DB::raw("ST_GeomFromText('POINT({$lng} {$lat})', 4326)");
+    }
+
+    public static function latitudeExpression(string $column = 'location'): string
+    {
+        return "ST_Y({$column})";
+    }
+
+    public static function longitudeExpression(string $column = 'location'): string
+    {
+        return "ST_X({$column})";
     }
 }

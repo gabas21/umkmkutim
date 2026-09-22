@@ -61,15 +61,16 @@ class PelakuUsahaDashboardController extends Controller
 
         $umkm = Umkm::withCoordinates()->findOrFail($id);
         $kategoriList = Kategori::all();
-        $daftarKecamatan = [
-            'Sangatta Utara', 'Sangatta Selatan', 'Bengalon', 'Teluk Pandan',
-            'Rantau Pulung', 'Muara Wahau', 'Kongbeng', 'Muara Bengkal',
-            'Muara Ancalong', 'Busang', 'Telen', 'Sandaran',
-            'Sangkulirang', 'Kaliorang', 'Kaubun', 'Karangan',
-            'Batu Ampar', 'Long Mesangat'
-        ];
+        // Use master kecamatan table for dropdown
+        $daftarKecamatan = \App\Models\Kecamatan::select('id', 'name')->orderBy('name')->get();
 
-        return view('dashboard.pelaku.edit-umkm', compact('umkm', 'kategoriList', 'daftarKecamatan'));
+        // Prepare initial kelurahan list if umkm has kecamatan_id
+        $initialKelurahan = [];
+        if (!empty($umkm->kecamatan_id)) {
+            $initialKelurahan = \App\Models\Kelurahan::where('kecamatan_id', $umkm->kecamatan_id)->select('id', 'name')->orderBy('name')->get();
+        }
+
+        return view('dashboard.pelaku.edit-umkm', compact('umkm', 'kategoriList', 'daftarKecamatan', 'initialKelurahan'));
     }
 
     public function updateUmkm(Request $request, $id)
@@ -92,7 +93,8 @@ class PelakuUsahaDashboardController extends Controller
             'kategori_id' => 'required|exists:kategori,id',
             'deskripsi' => 'nullable|string',
             'alamat' => 'required|string',
-            'kecamatan' => 'required|string|max:100',
+            'kecamatan_id' => 'nullable|exists:kecamatans,id',
+            'kelurahan_id' => 'nullable|exists:kelurahans,id',
             'kelurahan_desa' => 'nullable|string|max:100',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
@@ -111,8 +113,27 @@ class PelakuUsahaDashboardController extends Controller
         $lng = (float)$validated['longitude'];
         unset($validated['latitude'], $validated['longitude']);
 
+        // Map master ids to string fields for backward compatibility
+        if (isset($validated['kecamatan_id']) && $validated['kecamatan_id']) {
+            $kec = \App\Models\Kecamatan::find($validated['kecamatan_id']);
+            $validated['kecamatan'] = $kec ? $kec->name : $umkm->kecamatan;
+        }
+
+        if (isset($validated['kelurahan_id']) && $validated['kelurahan_id']) {
+            $kel = \App\Models\Kelurahan::find($validated['kelurahan_id']);
+            $validated['kelurahan_desa'] = $kel ? $kel->name : ($validated['kelurahan_desa'] ?? $umkm->kelurahan_desa);
+        }
+
         $umkm->fill($validated);
-        $umkm->location = DB::raw("ST_SRID(POINT({$lng}, {$lat}), 4326)");
+        // set relation ids explicitly
+        if (array_key_exists('kecamatan_id', $validated)) {
+            $umkm->kecamatan_id = $validated['kecamatan_id'];
+        }
+        if (array_key_exists('kelurahan_id', $validated)) {
+            $umkm->kelurahan_id = $validated['kelurahan_id'];
+        }
+
+        $umkm->location = DB::raw("ST_GeomFromText('POINT({$lng} {$lat})', 4326)");
         $umkm->save();
 
         return redirect()->route('dashboard.pelaku')->with('success', 'Data profil usaha berhasil diperbarui!');

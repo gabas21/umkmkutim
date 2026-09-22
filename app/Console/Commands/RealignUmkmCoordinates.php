@@ -104,10 +104,10 @@ class RealignUmkmCoordinates extends Command
 
         DB::statement("
             UPDATE umkm
-            SET location = ST_SRID(POINT(
-                CASE id {$whenLng} END,
-                CASE id {$whenLat} END
-            ), 4326)
+            SET location = ST_GeomFromText(
+                CONCAT('POINT(', CASE id {$whenLng} END, ' ', CASE id {$whenLat} END, ')'),
+                4326
+            )
             WHERE id IN ({$idList})
         ");
     }

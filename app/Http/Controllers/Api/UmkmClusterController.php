@@ -265,8 +265,8 @@ class UmkmClusterController extends Controller
                         kecamatan,
                         COUNT(*) as count,
                         SUM(CASE WHEN status_klaim = 'terverifikasi' THEN 1 ELSE 0 END) as terverifikasi_count,
-                        AVG(ST_Latitude(location)) as avg_lat,
-                        AVG(ST_Longitude(location)) as avg_lng
+                        AVG(" . Umkm::latitudeExpression() . ") as avg_lat,
+                        AVG(" . Umkm::longitudeExpression() . ") as avg_lng
                     ")->groupBy('kecamatan')->get();
 
                     $totalCount = (int) $kecPoints->sum('count');
@@ -288,8 +288,8 @@ class UmkmClusterController extends Controller
                 } else {
                     // PATCH: cap jumlah baris raw yang ditarik untuk clustering manual di PHP.
                     $rawPoints = $query->selectRaw("
-                        ST_Latitude(location) AS lat,
-                        ST_Longitude(location) AS lng,
+                        " . Umkm::latitudeExpression() . " AS lat,
+                        " . Umkm::longitudeExpression() . " AS lng,
                         kecamatan,
                         status_klaim
                     ")->limit(self::MAX_RAW_POINTS + 1)->get();
