@@ -583,15 +583,15 @@ class HomeController extends Controller
         return view('mobile.akun', $data);
     }
 
-    private function shouldUseMobileLayout(Request $request): bool
+    private function shouldUseMobileHomeLayout(Request $request): bool
     {
         $forcedView = strtolower((string) $request->query('view', ''));
 
-        if ($forcedView === 'mobile') {
+        if ($forcedView === 'mobile-home') {
             return true;
         }
 
-        if ($forcedView === 'desktop') {
+        if ($forcedView === 'desktop-home') {
             return false;
         }
 
@@ -602,8 +602,27 @@ class HomeController extends Controller
 
     public function index(Request $request)
     {
-        if ($this->shouldUseMobileLayout($request)) {
-            return view('mobile.preview', $this->mobilePreviewData());
+        if ($this->shouldUseMobileHomeLayout($request)) {
+            $data = $this->mobilePreviewData();
+            $data['promoItems'] = collect($this->loadPromoContent())
+                ->map(function ($item, $index) {
+                    $date = $item['start_date'] ?? now()->addDays($index + 1);
+
+                    return [
+                        'title' => $item['title'] ?? 'Promo UMKM',
+                        'type' => $index === 0 ? 'ACARA' : 'PROMO',
+                        'location' => $item['location'] ?? 'Kutim',
+                        'date' => $date instanceof \DateTimeInterface
+                            ? \Carbon\Carbon::parse($date)->format('d M Y')
+                            : (is_string($date) ? \Carbon\Carbon::parse($date)->format('d M Y') : '12 Sep 2026'),
+                        'badge' => $index === 0 ? 'Event' : 'Promo',
+                    ];
+                })
+                ->take(3)
+                ->values()
+                ->all();
+
+            return view('mobile.home', $data);
         }
 
         $daftarKecamatan = [
