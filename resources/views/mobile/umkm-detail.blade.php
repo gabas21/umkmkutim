@@ -33,8 +33,15 @@
         }
     </script>
     <style>
+        * { box-sizing: border-box; }
+        html, body {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            overflow-x: hidden;
+        }
         body { background: #edf4ef; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-        .phone-shell { width: min(100%, 390px); min-height: 840px; background: #f8faf8; border-radius: 32px; box-shadow: 0 30px 80px rgba(17, 24, 39, 0.12); overflow: hidden; border: 1px solid rgba(17, 24, 39, 0.04); }
+        .phone-shell { width: min(100%, 390px); max-width: 100%; min-height: 840px; background: #f8faf8; border-radius: 32px; box-shadow: 0 30px 80px rgba(17, 24, 39, 0.12); overflow: hidden; border: 1px solid rgba(17, 24, 39, 0.04); }
         .status-bar { height: 28px; background: rgba(255,255,255,0.7); backdrop-filter: blur(12px); }
         .bottom-nav { background: rgba(255,255,255,0.0); backdrop-filter: blur(12px); border-top: 0; box-shadow: none; }
         .nav-pill { border-radius: 18px; padding: 8px 6px 10px; transition: all .2s ease; min-height: 72px; }
@@ -44,9 +51,34 @@
         .nav-label { display: block; margin-top: 6px; font-size: 9px; line-height: 1; letter-spacing: 0.03em; text-transform: uppercase; }
         .card-soft { background: rgba(255,255,255,0.88); border: 1px solid rgba(17,24,39,0.04); box-shadow: 0 14px 32px rgba(15,23,42,0.05); }
         .section-label { letter-spacing: 0.12em; }
+        @media (max-width: 420px) {
+            body {
+                padding: 0;
+            }
+            .phone-shell {
+                width: 100%;
+                max-width: 100%;
+                min-height: 100vh;
+                border-radius: 0;
+                box-shadow: none;
+                border-left: 0;
+                border-right: 0;
+            }
+            .status-bar {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            nav.bottom-nav {
+                width: 100%;
+                max-width: 100%;
+                left: 0;
+                transform: none;
+                border-radius: 0;
+            }
+        }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 md:p-8">
+<body class="min-h-screen w-full overflow-x-hidden flex items-center justify-center p-2 sm:p-4 md:p-8">
     <div class="flex w-full justify-center">
         <div class="phone-shell">
             <div class="status-bar flex items-center justify-between px-5 text-[11px] font-semibold text-slate-700">

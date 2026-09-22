@@ -33,12 +33,20 @@
         }
     </script>
     <style>
+        * { box-sizing: border-box; }
+        html, body {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            overflow-x: hidden;
+        }
         body {
             background: #edf4ef;
             font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         .phone-shell {
             width: min(100%, 390px);
+            max-width: 100%;
             min-height: 840px;
             background: #f8faf8;
             border-radius: 32px;
@@ -106,9 +114,34 @@
         }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @media (max-width: 420px) {
+            body {
+                padding: 0;
+            }
+            .phone-shell {
+                width: 100%;
+                max-width: 100%;
+                min-height: 100vh;
+                border-radius: 0;
+                box-shadow: none;
+                border-left: 0;
+                border-right: 0;
+            }
+            .status-bar {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            nav.bottom-nav {
+                width: 100%;
+                max-width: 100%;
+                left: 0;
+                transform: none;
+                border-radius: 0;
+            }
+        }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 md:p-8">
+<body class="min-h-screen w-full overflow-x-hidden flex items-center justify-center p-2 sm:p-4 md:p-8">
     <div class="flex w-full justify-center">
         <div class="phone-shell">
             <div class="status-bar flex items-center justify-between px-5 text-[11px] font-semibold text-slate-700">

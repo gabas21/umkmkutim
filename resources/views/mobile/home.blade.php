@@ -32,6 +32,13 @@
         }
     </script>
     <style>
+        * { box-sizing: border-box; }
+        html, body {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            overflow-x: hidden;
+        }
         body {
             background: linear-gradient(180deg, #f0fdf4 0%, #f8fafc 100%);
             font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -48,10 +55,25 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
+        @media (max-width: 420px) {
+            body {
+                padding: 0;
+            }
+            main {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            nav.fixed {
+                left: 0;
+                right: 0;
+                width: 100%;
+                max-width: 100%;
+            }
+        }
     </style>
 </head>
-<body class="min-h-screen text-slate-800">
-    <div class="mx-auto flex min-h-screen max-w-md flex-col bg-white shadow-sm">
+<body class="min-h-screen w-full bg-slate-50 text-slate-800">
+    <div class="flex min-h-screen w-full flex-col bg-white">
         <header class="sticky top-0 z-30 border-b border-emerald-100 bg-white/90 backdrop-blur-xl">
             <div class="flex items-center justify-between px-4 py-3">
                 <div class="flex items-center gap-3">
@@ -168,21 +190,21 @@
             </section>
         </main>
 
-        <nav class="fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 border-t border-slate-200 bg-white/90 px-2 pb-3 pt-2 backdrop-blur-xl">
+        <nav class="fixed inset-x-0 bottom-0 z-40 mx-auto w-full border-t border-slate-200 bg-white/90 px-2 pb-3 pt-2 backdrop-blur-xl">
             <div class="grid grid-cols-4 gap-1 text-center">
-                <a href="{{ route('home') }}" class="rounded-2xl bg-emerald-50 px-2 py-2 text-emerald-700">
+                <a href="{{ route('preview.mobile') }}" class="rounded-2xl bg-emerald-50 px-2 py-2 text-emerald-700">
                     <div class="mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-sm">⌂</div>
                     <span class="mt-1 block text-[10px] font-bold">Beranda</span>
                 </a>
-                <a href="{{ route('umkm.index') }}" class="rounded-2xl px-2 py-2 text-slate-500">
+                <a href="{{ route('preview.mobile.umkm') }}" class="rounded-2xl px-2 py-2 text-slate-500">
                     <div class="mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-sm">▣</div>
                     <span class="mt-1 block text-[10px] font-bold">UMKM</span>
                 </a>
-                <a href="{{ route('peta.index') }}" class="rounded-2xl px-2 py-2 text-slate-500">
+                <a href="{{ route('preview.mobile.peta') }}" class="rounded-2xl px-2 py-2 text-slate-500">
                     <div class="mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-sm">⌖</div>
                     <span class="mt-1 block text-[10px] font-bold">Peta</span>
                 </a>
-                <a href="{{ route('login') }}" class="rounded-2xl px-2 py-2 text-slate-500">
+                <a href="{{ route('preview.mobile.akun') }}" class="rounded-2xl px-2 py-2 text-slate-500">
                     <div class="mx-auto flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-sm">◉</div>
                     <span class="mt-1 block text-[10px] font-bold">Akun</span>
                 </a>

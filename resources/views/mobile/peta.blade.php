@@ -11,8 +11,15 @@
         tailwind.config = { theme: { extend: { colors: { brand: {'50': '#f0fdf4', '100': '#dcfce7', '500': '#16a34a', '600': '#15803d', '700': '#166534', '900': '#14532d'}, ink: '#111827', mist: '#f5f7f5', muted: '#6b7280', line: '#e5e7eb' }, boxShadow: { soft: '0 12px 30px rgba(15, 23, 42, 0.06)', lift: '0 18px 45px rgba(20, 83, 45, 0.15)' } } } } }
     </script>
     <style>
+        * { box-sizing: border-box; }
+        html, body {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            overflow-x: hidden;
+        }
         body { background: #edf4ef; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-        .phone-shell { width: min(100%, 390px); min-height: 840px; background: #f8faf8; border-radius: 32px; box-shadow: 0 30px 80px rgba(17, 24, 39, 0.12); overflow: hidden; border: 1px solid rgba(17, 24, 39, 0.04); }
+        .phone-shell { width: min(100%, 390px); max-width: 100%; min-height: 840px; background: #f8faf8; border-radius: 32px; box-shadow: 0 30px 80px rgba(17, 24, 39, 0.12); overflow: hidden; border: 1px solid rgba(17, 24, 39, 0.04); }
         .status-bar { height: 28px; background: rgba(255,255,255,0.7); backdrop-filter: blur(12px); }
         .bottom-nav { background: rgba(255,255,255,0.0); backdrop-filter: blur(12px); border-top: 0; box-shadow: none; z-index: 80; }
         .nav-pill { border-radius: 18px; padding: 8px 6px 10px; transition: all .2s ease; min-height: 72px; }
@@ -26,9 +33,34 @@
         /* Ensure map sits below the bottom navigation and controls */
         #leaflet-map { z-index: 0; }
         nav.bottom-nav { z-index: 90; position: fixed; }
+        @media (max-width: 420px) {
+            body {
+                padding: 0;
+            }
+            .phone-shell {
+                width: 100%;
+                max-width: 100%;
+                min-height: 100vh;
+                border-radius: 0;
+                box-shadow: none;
+                border-left: 0;
+                border-right: 0;
+            }
+            .status-bar {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            nav.bottom-nav {
+                width: 100%;
+                max-width: 100%;
+                left: 0;
+                transform: none;
+                border-radius: 0;
+            }
+        }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 md:p-8">
+<body class="min-h-screen w-full overflow-x-hidden flex items-center justify-center p-2 sm:p-4 md:p-8">
     <div class="flex w-full justify-center">
         <div class="phone-shell">
             <div class="status-bar flex items-center justify-between px-5 text-[11px] font-semibold text-slate-700">
