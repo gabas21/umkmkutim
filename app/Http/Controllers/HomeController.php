@@ -583,8 +583,29 @@ class HomeController extends Controller
         return view('mobile.akun', $data);
     }
 
+    private function shouldUseMobileLayout(Request $request): bool
+    {
+        $forcedView = strtolower((string) $request->query('view', ''));
+
+        if ($forcedView === 'mobile') {
+            return true;
+        }
+
+        if ($forcedView === 'desktop') {
+            return false;
+        }
+
+        $userAgent = strtolower((string) $request->header('User-Agent', ''));
+
+        return preg_match('/(android|iphone|ipod|ipad|mobile|blackberry|opera mini|iemobile|windows phone)/i', $userAgent) === 1;
+    }
+
     public function index(Request $request)
     {
+        if ($this->shouldUseMobileLayout($request)) {
+            return view('mobile.preview', $this->mobilePreviewData());
+        }
+
         $daftarKecamatan = [
             'Sangatta Utara', 'Sangatta Selatan', 'Bengalon', 'Teluk Pandan',
             'Rantau Pulung', 'Muara Wahau', 'Kongbeng', 'Muara Bengkal',

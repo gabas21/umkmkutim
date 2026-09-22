@@ -17,6 +17,15 @@ class UmkmKutimTest extends TestCase
         $response->assertSee('Ekosistem Resmi Direktori');
     }
 
+    public function test_mobile_user_agent_uses_mobile_home_view()
+    {
+        $response = $this->withHeader('User-Agent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)')->get('/');
+
+        $response->assertStatus(200);
+        $response->assertSee('UMKM Kutim');
+        $response->assertSee('Cari UMKM');
+    }
+
     public function test_umkm_directory_loads_successfully()
     {
         $response = $this->get('/umkm');
