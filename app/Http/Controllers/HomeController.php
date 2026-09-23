@@ -2,17 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Bazar;
 use App\Models\Berita;
 use App\Models\Event;
 use App\Models\HeroSlide;
 use App\Models\Kategori;
-use App\Models\Pelatihan;
-use App\Models\SurveyKepuasan;
 use App\Models\Umkm;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class HomeController extends Controller
@@ -145,7 +144,182 @@ class HomeController extends Controller
             return '<i class="fa-solid fa-circle"></i>';
         }
 
-        return '<i class="fa-solid fa-' . $faNameSafe . '"></i>';
+        return '<i class="fa-solid fa-'.$faNameSafe.'"></i>';
+    }
+
+    private function resolveUmkmImage(?string $fotoUtama = null): string
+    {
+        if (! empty($fotoUtama)) {
+            if (str_starts_with($fotoUtama, 'http://') || str_starts_with($fotoUtama, 'https://')) {
+                return $fotoUtama;
+            }
+
+            if (Storage::disk('public')->exists($fotoUtama)) {
+                return Storage::url($fotoUtama);
+            }
+        }
+
+        return asset('umkm.png');
+    }
+
+    private function normalizeExternalUrl(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        if (Str::startsWith($value, ['http://', 'https://'])) {
+            return $value;
+        }
+
+        return 'https://'.ltrim($value, '/');
+    }
+
+    private function resolveInstagramUrl(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        if (Str::startsWith($value, ['http://', 'https://'])) {
+            return $value;
+        }
+
+        return 'https://www.instagram.com/'.ltrim($value, '@/');
+    }
+
+    private function resolveWhatsAppUrl(?string $phone): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $phone) ?? '';
+
+        if ($digits === '') {
+            return null;
+        }
+
+        if (Str::startsWith($digits, '0')) {
+            $digits = '62'.substr($digits, 1);
+        } elseif (Str::startsWith($digits, '8')) {
+            $digits = '62'.$digits;
+        }
+
+        return 'https://wa.me/'.$digits;
+    }
+
+    /**
+     * @return array<int, array{label: string, url: string, icon: string, icon_background: string, icon_color: string}>
+     */
+    private function buildDetailLinks(?string $instagram, ?string $website): array
+    {
+        $links = [];
+
+        $instagramUrl = $this->resolveInstagramUrl($instagram);
+        if ($instagramUrl !== null) {
+            $links[] = [
+                'label' => 'Instagram',
+                'url' => $instagramUrl,
+                'icon' => 'fa-brands fa-instagram',
+                'icon_background' => 'bg-pink-50',
+                'icon_color' => 'text-pink-600',
+            ];
+        }
+
+        $websiteUrl = $this->normalizeExternalUrl($website);
+        if ($websiteUrl === null) {
+            return $links;
+        }
+
+        if ($instagramUrl !== null && $websiteUrl === $instagramUrl) {
+            return $links;
+        }
+
+        $host = strtolower((string) parse_url($websiteUrl, PHP_URL_HOST));
+
+        $label = 'Website';
+        $icon = 'fa-solid fa-globe';
+        $iconBackground = 'bg-sky-50';
+        $iconColor = 'text-sky-600';
+
+        if (Str::contains($host, 'shopee')) {
+            $label = 'Shopee';
+            $icon = 'fa-solid fa-bag-shopping';
+            $iconBackground = 'bg-orange-50';
+            $iconColor = 'text-orange-600';
+        } elseif (Str::contains($host, 'tokopedia')) {
+            $label = 'Tokopedia';
+            $icon = 'fa-solid fa-shop';
+            $iconBackground = 'bg-emerald-50';
+            $iconColor = 'text-emerald-600';
+        } elseif (Str::contains($host, 'tiktok')) {
+            $label = 'TikTok';
+            $icon = 'fa-brands fa-tiktok';
+            $iconBackground = 'bg-slate-100';
+            $iconColor = 'text-slate-900';
+        } elseif (Str::contains($host, ['facebook.com', 'fb.com'])) {
+            $label = 'Facebook';
+            $icon = 'fa-brands fa-facebook-f';
+            $iconBackground = 'bg-blue-50';
+            $iconColor = 'text-blue-600';
+        } elseif (Str::contains($host, ['youtube.com', 'youtu.be'])) {
+            $label = 'YouTube';
+            $icon = 'fa-brands fa-youtube';
+            $iconBackground = 'bg-red-50';
+            $iconColor = 'text-red-600';
+        } elseif (Str::contains($host, 'instagram.com')) {
+            $label = 'Instagram';
+            $icon = 'fa-brands fa-instagram';
+            $iconBackground = 'bg-pink-50';
+            $iconColor = 'text-pink-600';
+        }
+
+        $links[] = [
+            'label' => $label,
+            'url' => $websiteUrl,
+            'icon' => $icon,
+            'icon_background' => $iconBackground,
+            'icon_color' => $iconColor,
+        ];
+
+        return $links;
+    }
+
+    /**
+     * @param  array<int, mixed>  $products
+     * @return array<int, array{name: string, price: string, description: string, image: string, badge: string}>
+     */
+    private function buildCatalogProducts(array $products, string $fallbackImage): array
+    {
+        $fallbackDescriptions = [
+            'Pilihan favorit pelanggan dengan kualitas terbaik dari UMKM ini.',
+            'Dibuat dengan bahan pilihan dan cocok untuk kebutuhan harian.',
+            'Produk unggulan yang sering dicari pelanggan lokal Kutim.',
+            'Siap dipesan untuk konsumsi pribadi maupun kebutuhan acara.',
+        ];
+
+        $fallbackPrices = [18000, 25000, 32000, 45000];
+        $fallbackBadges = ['Terlaris', 'Favorit', 'Rekomendasi', 'Baru'];
+
+        return collect($products)
+            ->filter(fn ($product) => filled($product))
+            ->values()
+            ->map(function ($product, $index) use ($fallbackDescriptions, $fallbackPrices, $fallbackBadges, $fallbackImage) {
+                $name = is_array($product) ? (string) ($product['name'] ?? $product['nama'] ?? 'Produk UMKM') : (string) $product;
+
+                return [
+                    'name' => $name,
+                    'price' => 'Rp '.number_format($fallbackPrices[$index % count($fallbackPrices)], 0, ',', '.'),
+                    'description' => $fallbackDescriptions[$index % count($fallbackDescriptions)],
+                    'image' => is_array($product) && filled($product['image'] ?? null)
+                        ? $this->resolveUmkmImage((string) $product['image'])
+                        : $fallbackImage,
+                    'badge' => $fallbackBadges[$index % count($fallbackBadges)],
+                ];
+            })
+            ->take(6)
+            ->all();
     }
 
     private function mobilePreviewData(): array
@@ -154,27 +328,70 @@ class HomeController extends Controller
             $categories = Kategori::query()
                 ->select(['id', 'nama', 'icon'])
                 ->orderBy('nama')
-                ->limit(5)
                 ->get();
 
-            $featuredUmkm = Umkm::query()
-                ->where('status', 'active')
-                ->with('kategori:id,nama')
-                ->orderByDesc('rating')
-                ->orderByDesc('jumlah_review')
-                ->limit(3)
-                ->get()
-                ->map(function ($umkm) {
-                    return [
-                        'id' => $umkm->id,
-                        'nama_usaha' => $umkm->nama_usaha,
-                        'slug' => $umkm->slug,
-                        'kategori' => ['nama' => $umkm->kategori?->nama ?? 'Umum'],
-                        'rating' => (float) ($umkm->rating ?? 0),
-                        'alamat' => $umkm->alamat ?? $umkm->kecamatan ?? 'Kutim',
-                        'jarak_km' => 3.2 + ($umkm->id % 3),
-                    ];
-                });
+            $categoryGroups = $categories->isNotEmpty() ? $categories->map(function ($category) {
+                $items = Umkm::query()
+                    ->where('status', 'active')
+                    ->where('kategori_id', $category->id)
+                    ->with('kategori:id,nama')
+                    ->orderByDesc('rating')
+                    ->orderByDesc('jumlah_review')
+                    ->limit(4)
+                    ->get()
+                    ->map(function ($umkm) {
+                        return [
+                            'id' => $umkm->id,
+                            'nama_usaha' => $umkm->nama_usaha,
+                            'slug' => $umkm->slug,
+                            'kategori' => ['nama' => $umkm->kategori?->nama ?? 'Umum'],
+                            'rating' => (float) ($umkm->rating ?? 0),
+                            'alamat' => $umkm->alamat ?? $umkm->kecamatan ?? 'Kutim',
+                            'jarak_km' => 2.4 + ($umkm->id % 5),
+                            'foto_utama' => $this->resolveUmkmImage($umkm->foto_utama),
+                        ];
+                    })
+                    ->toArray();
+
+                if (empty($items)) {
+                    $items = [[
+                        'id' => 0,
+                        'nama_usaha' => $category->nama,
+                        'slug' => Str::slug($category->nama),
+                        'kategori' => ['nama' => $category->nama],
+                        'rating' => 4.8,
+                        'alamat' => 'Kabupaten Kutim',
+                        'jarak_km' => 3.2,
+                        'foto_utama' => asset('umkm.png'),
+                    ]];
+                }
+
+                return [
+                    'title' => $category->nama,
+                    'items' => $items,
+                ];
+            })->filter(fn ($group) => ! empty($group['items']))->values()->all() : [
+                [
+                    'title' => 'Terbaik',
+                    'items' => [
+                        ['id' => 1, 'nama_usaha' => 'Kopi Lestari', 'slug' => 'kopi-lestari', 'kategori' => ['nama' => 'Kuliner'], 'rating' => 4.8, 'alamat' => 'Sangatta Utara', 'jarak_km' => 3.2, 'foto_utama' => asset('umkm.png')],
+                        ['id' => 2, 'nama_usaha' => 'Anyam Rasa', 'slug' => 'anyam-rasa', 'kategori' => ['nama' => 'Kerajinan'], 'rating' => 4.9, 'alamat' => 'Bengalon', 'jarak_km' => 4.8, 'foto_utama' => asset('umkm.png')],
+                        ['id' => 3, 'nama_usaha' => 'Tani Maju', 'slug' => 'tani-maju', 'kategori' => ['nama' => 'Pertanian'], 'rating' => 4.7, 'alamat' => 'Muara Wahau', 'jarak_km' => 6.1, 'foto_utama' => asset('umkm.png')],
+                        ['id' => 4, 'nama_usaha' => 'Batik Nusantara', 'slug' => 'batik-nusantara', 'kategori' => ['nama' => 'Fashion'], 'rating' => 4.8, 'alamat' => 'Kota Bangun', 'jarak_km' => 7.4, 'foto_utama' => asset('umkm.png')],
+                    ],
+                ],
+                [
+                    'title' => 'Terdekat',
+                    'items' => [
+                        ['id' => 5, 'nama_usaha' => 'Kopi Lestari', 'slug' => 'kopi-lestari', 'kategori' => ['nama' => 'Kuliner'], 'rating' => 4.8, 'alamat' => 'Sangatta Utara', 'jarak_km' => 3.2, 'foto_utama' => asset('umkm.png')],
+                        ['id' => 6, 'nama_usaha' => 'Anyam Rasa', 'slug' => 'anyam-rasa', 'kategori' => ['nama' => 'Kerajinan'], 'rating' => 4.9, 'alamat' => 'Bengalon', 'jarak_km' => 4.8, 'foto_utama' => asset('umkm.png')],
+                        ['id' => 7, 'nama_usaha' => 'Tani Maju', 'slug' => 'tani-maju', 'kategori' => ['nama' => 'Pertanian'], 'rating' => 4.7, 'alamat' => 'Muara Wahau', 'jarak_km' => 6.1, 'foto_utama' => asset('umkm.png')],
+                        ['id' => 8, 'nama_usaha' => 'Batik Nusantara', 'slug' => 'batik-nusantara', 'kategori' => ['nama' => 'Fashion'], 'rating' => 4.8, 'alamat' => 'Kota Bangun', 'jarak_km' => 7.4, 'foto_utama' => asset('umkm.png')],
+                    ],
+                ],
+            ];
+
+            $featuredUmkm = collect($categoryGroups)->flatten(1)->take(4)->values()->all();
 
             $promoEvents = $this->loadPromoContent();
 
@@ -190,7 +407,8 @@ class HomeController extends Controller
 
             return [
                 'categories' => $mappedCategories,
-                'featuredUmkm' => $featuredUmkm->isNotEmpty() ? $featuredUmkm->toArray() : $this->fallbackMobileData()['featuredUmkm'],
+                'featuredUmkm' => $featuredUmkm,
+                'categoryGroups' => $categoryGroups,
                 'promoEvents' => $promoEvents ?: $this->fallbackMobileData()['promoEvents'],
                 'userProfile' => [
                     'name' => $user?->name ?? 'Ayu Lestari',
@@ -211,7 +429,9 @@ class HomeController extends Controller
     {
         $data = $this->mobilePreviewData();
         $selectedCategoryId = $request->input('kategori');
+        $selectedKecamatan = trim((string) $request->input('kecamatan', ''));
         $searchTerm = trim((string) $request->input('q', ''));
+        $sort = strtolower((string) $request->input('sort', 'rating'));
 
         try {
             $query = Umkm::query()
@@ -219,13 +439,13 @@ class HomeController extends Controller
                 ->with('kategori:id,nama,icon');
 
             if ($searchTerm !== '') {
-                $keyword = '%' . $searchTerm . '%';
+                $keyword = '%'.$searchTerm.'%';
                 $query->where(function ($umkmQuery) use ($keyword, $searchTerm) {
                     $umkmQuery->where('nama_usaha', 'like', $keyword)
                         ->orWhere('deskripsi', 'like', $keyword)
                         ->orWhere('alamat', 'like', $keyword)
                         ->orWhere('kecamatan', 'like', $keyword)
-                        ->orWhere('slug', 'like', '%' . Str::slug($searchTerm) . '%');
+                        ->orWhere('slug', 'like', '%'.Str::slug($searchTerm).'%');
                 });
             }
 
@@ -233,9 +453,20 @@ class HomeController extends Controller
                 $query->where('kategori_id', $selectedCategoryId);
             }
 
+            if ($selectedKecamatan !== '') {
+                $query->where('kecamatan', 'like', '%'.$selectedKecamatan.'%');
+            }
+
+            if ($sort === 'newest') {
+                $query->orderByDesc('created_at');
+            } elseif ($sort === 'nearest') {
+                $query->orderBy('id');
+            } else {
+                $query->orderByDesc('rating')
+                    ->orderByDesc('jumlah_review');
+            }
+
             $data['featuredUmkm'] = $query
-                ->orderByDesc('rating')
-                ->orderByDesc('jumlah_review')
                 ->limit(8)
                 ->get()
                 ->map(function ($umkm) {
@@ -264,13 +495,29 @@ class HomeController extends Controller
                 })
                 ->toArray();
 
+            $data['kecamatanList'] = Umkm::query()
+                ->select('kecamatan')
+                ->whereNotNull('kecamatan')
+                ->where('kecamatan', '!=', '')
+                ->distinct()
+                ->orderBy('kecamatan')
+                ->pluck('kecamatan')
+                ->filter()
+                ->values()
+                ->toArray();
+
             $data['selectedCategoryId'] = $selectedCategoryId;
+            $data['selectedKecamatan'] = $selectedKecamatan;
             $data['searchTerm'] = $searchTerm;
+            $data['selectedSort'] = $sort;
         } catch (\Throwable $e) {
             $data['featuredUmkm'] = $data['featuredUmkm'] ?? $this->fallbackMobileData()['featuredUmkm'];
             $data['categoryList'] = $data['categories'] ?? $this->fallbackMobileData()['categories'];
+            $data['kecamatanList'] = [];
             $data['selectedCategoryId'] = $selectedCategoryId;
+            $data['selectedKecamatan'] = $selectedKecamatan;
             $data['searchTerm'] = $searchTerm;
+            $data['selectedSort'] = $sort;
         }
 
         return view('mobile.umkm', $data);
@@ -288,6 +535,12 @@ class HomeController extends Controller
                 ->first();
 
             if ($umkm) {
+                $fallbackImage = $this->resolveUmkmImage($umkm->foto_utama);
+                $catalogProducts = $this->buildCatalogProducts(
+                    is_array($umkm->produk_unggulan ?? null) ? $umkm->produk_unggulan : ['Produk unggulan 1', 'Produk unggulan 2', 'Produk unggulan 3'],
+                    $fallbackImage
+                );
+
                 $data['detailUmkm'] = [
                     'nama_usaha' => $umkm->nama_usaha,
                     'slug' => $umkm->slug,
@@ -298,7 +551,12 @@ class HomeController extends Controller
                     'telepon' => $umkm->telepon ?? '+62 812-3456-7890',
                     'deskripsi' => $umkm->deskripsi ?? 'Produk lokal berkualitas dari komunitas UMKM Kabupaten Kutim, siap menjadi pilihan wisata kuliner dan kebutuhan harian masyarakat.',
                     'produk' => $umkm->produk_unggulan ?? ['Kopi lokal', 'Roti', 'Kerajinan tangan'],
-                    'foto_utama' => $umkm->foto_utama ?? null,
+                    'foto_utama' => $fallbackImage,
+                    'instagram' => $umkm->instagram,
+                    'website' => $umkm->website,
+                    'links' => $this->buildDetailLinks($umkm->instagram, $umkm->website),
+                    'whatsapp_url' => $this->resolveWhatsAppUrl($umkm->telepon),
+                    'catalog_products' => $catalogProducts,
                 ];
             } else {
                 $data['detailUmkm'] = [
@@ -312,6 +570,14 @@ class HomeController extends Controller
                     'deskripsi' => 'Produk lokal berkualitas dari komunitas UMKM Kabupaten Kutim, siap menjadi pilihan wisata kuliner dan kebutuhan harian masyarakat.',
                     'produk' => ['Kopi lokal', 'Roti', 'Snack khas'],
                     'foto_utama' => null,
+                    'instagram' => 'kopilestari.kutim',
+                    'website' => 'https://www.tokopedia.com/kopi-lestari-kutim',
+                    'links' => $this->buildDetailLinks('kopilestari.kutim', 'https://www.tokopedia.com/kopi-lestari-kutim'),
+                    'whatsapp_url' => $this->resolveWhatsAppUrl('+62 812-3456-7890'),
+                    'catalog_products' => $this->buildCatalogProducts(
+                        ['Kopi Arabika Kutim', 'Cold Brew Botol', 'Roti Gula Aren', 'Snack Kopi'],
+                        asset('umkm.png')
+                    ),
                 ];
             }
         } catch (\Throwable $e) {
@@ -326,6 +592,14 @@ class HomeController extends Controller
                 'deskripsi' => 'Produk lokal berkualitas dari komunitas UMKM Kabupaten Kutim, siap menjadi pilihan wisata kuliner dan kebutuhan harian masyarakat.',
                 'produk' => ['Kopi lokal', 'Roti', 'Snack khas'],
                 'foto_utama' => null,
+                'instagram' => 'kopilestari.kutim',
+                'website' => 'https://www.tokopedia.com/kopi-lestari-kutim',
+                'links' => $this->buildDetailLinks('kopilestari.kutim', 'https://www.tokopedia.com/kopi-lestari-kutim'),
+                'whatsapp_url' => $this->resolveWhatsAppUrl('+62 812-3456-7890'),
+                'catalog_products' => $this->buildCatalogProducts(
+                    ['Kopi Arabika Kutim', 'Cold Brew Botol', 'Roti Gula Aren', 'Snack Kopi'],
+                    asset('umkm.png')
+                ),
             ];
         }
 
@@ -359,14 +633,14 @@ class HomeController extends Controller
             }
 
             if ($searchTerm !== '') {
-                $keyword = '%' . $searchTerm . '%';
+                $keyword = '%'.$searchTerm.'%';
                 $query->where(function ($umkmQuery) use ($keyword, $searchTerm) {
                     $umkmQuery->where('nama_usaha', 'like', $keyword)
                         ->orWhere('alamat', 'like', $keyword)
                         ->orWhere('kecamatan', 'like', $keyword)
                         ->orWhere('kelurahan_desa', 'like', $keyword)
                         ->orWhere('deskripsi', 'like', $keyword)
-                        ->orWhere('slug', 'like', '%' . Str::slug($searchTerm) . '%');
+                        ->orWhere('slug', 'like', '%'.Str::slug($searchTerm).'%');
                 });
             }
 
@@ -375,7 +649,7 @@ class HomeController extends Controller
             }
 
             if ($selectedKecamatan !== '') {
-                $query->where('kecamatan', 'like', '%' . $selectedKecamatan . '%');
+                $query->where('kecamatan', 'like', '%'.$selectedKecamatan.'%');
             }
 
             if ($selectedRating > 0) {
@@ -488,14 +762,14 @@ class HomeController extends Controller
                 ->where('status', 'active');
 
             if ($q !== '') {
-                $keyword = '%' . $q . '%';
+                $keyword = '%'.$q.'%';
                 $query->where(function ($umkmQuery) use ($keyword, $q) {
                     $umkmQuery->where('nama_usaha', 'like', $keyword)
                         ->orWhere('alamat', 'like', $keyword)
                         ->orWhere('kecamatan', 'like', $keyword)
                         ->orWhere('kelurahan_desa', 'like', $keyword)
                         ->orWhere('deskripsi', 'like', $keyword)
-                        ->orWhere('slug', 'like', '%' . Str::slug($q) . '%');
+                        ->orWhere('slug', 'like', '%'.Str::slug($q).'%');
                 });
             }
 
@@ -535,8 +809,8 @@ class HomeController extends Controller
                     'type' => $index === 0 ? 'ACARA' : 'PROMO',
                     'location' => $item['location'] ?? 'Kutim',
                     'date' => $date instanceof \DateTimeInterface
-                        ? \Carbon\Carbon::parse($date)->format('d M Y')
-                        : (is_string($date) ? \Carbon\Carbon::parse($date)->format('d M Y') : '12 Sep 2026'),
+                        ? Carbon::parse($date)->format('d M Y')
+                        : (is_string($date) ? Carbon::parse($date)->format('d M Y') : '12 Sep 2026'),
                     'badge' => $index === 0 ? 'Event' : 'Promo',
                 ];
             })
@@ -574,10 +848,10 @@ class HomeController extends Controller
         ];
 
         $data['menuItems'] = [
-            ['title' => 'Favorit saya', 'subtitle' => 'UMKM dan promo yang disimpan', 'icon' => '❤'],
-            ['title' => 'Notifikasi', 'subtitle' => 'Event dan promo terbaru', 'icon' => '⚑'],
-            ['title' => 'Pengaturan', 'subtitle' => 'Kelola profil dan keamanan', 'icon' => '⚙'],
-            ['title' => 'Bantuan', 'subtitle' => 'Pusat bantuan dan kebijakan', 'icon' => '?'],
+            ['title' => 'Favorit saya', 'subtitle' => 'UMKM dan promo yang disimpan', 'icon' => 'fa-regular fa-heart'],
+            ['title' => 'Notifikasi', 'subtitle' => 'Event dan promo terbaru', 'icon' => 'fa-regular fa-bell'],
+            ['title' => 'Pengaturan', 'subtitle' => 'Kelola profil dan keamanan', 'icon' => 'fa-solid fa-gear'],
+            ['title' => 'Bantuan', 'subtitle' => 'Pusat bantuan dan kebijakan', 'icon' => 'fa-regular fa-circle-question'],
         ];
 
         return view('mobile.akun', $data);
@@ -613,8 +887,8 @@ class HomeController extends Controller
                         'type' => $index === 0 ? 'ACARA' : 'PROMO',
                         'location' => $item['location'] ?? 'Kutim',
                         'date' => $date instanceof \DateTimeInterface
-                            ? \Carbon\Carbon::parse($date)->format('d M Y')
-                            : (is_string($date) ? \Carbon\Carbon::parse($date)->format('d M Y') : '12 Sep 2026'),
+                            ? Carbon::parse($date)->format('d M Y')
+                            : (is_string($date) ? Carbon::parse($date)->format('d M Y') : '12 Sep 2026'),
                         'badge' => $index === 0 ? 'Event' : 'Promo',
                     ];
                 })
@@ -630,7 +904,7 @@ class HomeController extends Controller
             'Rantau Pulung', 'Muara Wahau', 'Kongbeng', 'Muara Bengkal',
             'Muara Ancalong', 'Busang', 'Telen', 'Sandaran',
             'Sangkulirang', 'Kaliorang', 'Kaubun', 'Karangan',
-            'Batu Ampar', 'Long Mesangat'
+            'Batu Ampar', 'Long Mesangat',
         ];
 
         $totalUmkm = Umkm::active()->count();

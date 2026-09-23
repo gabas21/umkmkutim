@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UMKM Kutim</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script>
         tailwind.config = {
             theme: {
@@ -54,6 +55,13 @@
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
+        }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         @media (max-width: 420px) {
             body {
@@ -134,60 +142,51 @@
                 </div>
             </section>
 
-            <section>
-                <div class="mb-3 flex items-center justify-between">
-                    <h3 class="text-sm font-black uppercase tracking-[0.12em] text-slate-500">Pilihan hari ini</h3>
-                    <a href="#" class="text-xs font-bold text-emerald-700">Lainnya</a>
-                </div>
+            @php
+                $homeSections = $categoryGroups ?? [
+                    ['title' => 'Terbaik', 'items' => collect($featuredUmkm ?? [])->take(4)->values()->all()],
+                    ['title' => 'Terdekat', 'items' => collect($featuredUmkm ?? [])->take(4)->values()->all()],
+                ];
+            @endphp
 
-                <div class="space-y-3">
-                    @foreach (($featuredUmkm ?? []) as $item)
-                        <div class="rounded-[26px] border border-slate-200 bg-white p-3 shadow-soft">
-                            <div class="flex items-start gap-3">
-                                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-100 to-amber-100 text-lg font-black text-emerald-700">
-                                    {{ strtoupper(substr(($item['nama_usaha'] ?? 'UMKM'), 0, 1)) }}
-                                </div>
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-center justify-between gap-2">
-                                        <h4 class="truncate text-sm font-black text-slate-900">{{ $item['nama_usaha'] ?? 'UMKM Lokal' }}</h4>
-                                        <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">{{ number_format((float) ($item['rating'] ?? 0), 1) }}</span>
+            @foreach ($homeSections as $section)
+                <section>
+                    <div class="mb-3 flex items-center justify-between">
+                        <h3 class="text-sm font-black uppercase tracking-[0.12em] text-slate-500">{{ $section['title'] }}</h3>
+                        <a href="#" class="text-xs font-bold text-emerald-700">Lainnya</a>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        @foreach (($section['items'] ?? []) as $item)
+                            <a href="{{ route('preview.mobile.umkm.detail', ['slug' => $item['slug'] ?? 'kopi-lestari']) }}" class="block rounded-[24px] border border-slate-200 bg-white p-3 shadow-soft transition-transform duration-200 active:scale-[0.98]">
+                                <div class="flex flex-col gap-3">
+                                    <div class="overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-100 to-amber-100">
+                                        <img
+                                            src="{{ $item['foto_utama'] ?? asset('umkm.png') }}"
+                                            alt="{{ $item['nama_usaha'] ?? 'UMKM' }}"
+                                            class="h-20 w-full object-cover"
+                                            onerror="this.onerror=null; this.src='{{ asset('umkm.png') }}';"
+                                        >
                                     </div>
-                                    <p class="mt-1 text-[11px] text-slate-500">{{ $item['kategori']['nama'] ?? 'Umum' }} • {{ $item['alamat'] ?? 'Kutim' }}</p>
-                                    <div class="mt-2 flex items-center justify-between">
-                                        <span class="text-[10px] font-semibold text-emerald-700">{{ $item['jarak_km'] ?? '3.2' }} km</span>
-                                        <button class="rounded-full bg-brand-600 px-2.5 py-1 text-[10px] font-bold text-white">Lihat</button>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <h4 class="truncate text-xs font-black text-slate-900">{{ $item['nama_usaha'] ?? 'UMKM Lokal' }}</h4>
+                                            <span class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800">{{ number_format((float) ($item['rating'] ?? 0), 1) }}</span>
+                                        </div>
+                                        <p class="mt-1 text-[10px] text-slate-500">{{ $item['kategori']['nama'] ?? 'Umum' }}</p>
+                                        <p class="mt-0.5 line-clamp-2 text-[10px] text-slate-400">{{ $item['alamat'] ?? 'Kutim' }}</p>
+                                        <div class="mt-2 flex items-center justify-between">
+                                            <span class="text-[9px] font-semibold text-emerald-700">{{ $item['jarak_km'] ?? '3.2' }} km</span>
+                                            <span class="rounded-full bg-brand-600 px-2 py-1 text-[9px] font-bold text-white">Lihat</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </section>
+                            </a>
+                        @endforeach
+                    </div>
+                </section>
+            @endforeach
 
-            <section>
-                <div class="mb-3 flex items-center justify-between">
-                    <h3 class="text-sm font-black uppercase tracking-[0.12em] text-slate-500">Promo & acara</h3>
-                    <a href="#" class="text-xs font-bold text-emerald-700">Semua</a>
-                </div>
-
-                <div class="space-y-3">
-                    @foreach (($promoItems ?? []) as $promo)
-                        <div class="rounded-[24px] border border-slate-200 bg-slate-50 p-3">
-                            <div class="flex items-start justify-between gap-2">
-                                <div>
-                                    <span class="inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">{{ $promo['badge'] ?? 'Promo' }}</span>
-                                    <h4 class="mt-2 text-sm font-black text-slate-900">{{ $promo['title'] ?? 'Promo UMKM' }}</h4>
-                                </div>
-                                <span class="rounded-full bg-white px-2 py-1 text-[10px] font-bold text-slate-600">{{ $promo['type'] ?? 'PROMO' }}</span>
-                            </div>
-                            <div class="mt-3 flex items-center justify-between text-[11px] text-slate-500">
-                                <span>{{ $promo['location'] ?? 'Kutim' }}</span>
-                                <span>{{ $promo['date'] ?? date('d M Y') }}</span>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </section>
         </main>
 
 @include('mobile.partials.bottom-nav')
