@@ -145,7 +145,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-20 items-center">
                 <!-- Logo & Branding -->
-                <a href="{{ route('home') }}" class="flex items-center gap-3.5 group">
+                <a id="site-logo-link" href="{{ route('home') }}" class="flex items-center gap-3.5 group">
                     <img src="{{ asset('logo1.png') }}" alt="Logo Kabupaten Kutai Timur" class="h-12 w-auto object-contain group-hover:scale-105 transition duration-200 drop-shadow-sm">
                     <div>
                         <div class="flex items-center gap-1.5">
@@ -416,18 +416,43 @@
             document.addEventListener('DOMContentLoaded', function(){
                 const flag = localStorage.getItem('umkm_first_open_done');
                 if(flag === '1') return;
-                // Prefer bottom nav home if present (mobile), fallback to top nav link
+
+                function isVisible(el){
+                    if(!el) return false;
+                    const style = getComputedStyle(el);
+                    if(style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity||'1') === 0) return false;
+                    const rect = el.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0;
+                }
+
                 const bottomHome = document.getElementById('bottom-home-link');
                 const topHome = document.getElementById('top-home-link');
-                const targetLink = bottomHome || topHome;
+                const siteLogo = document.getElementById('site-logo-link');
+
+                let targetLink = null;
+                if(isVisible(bottomHome)) targetLink = bottomHome;
+                else if(isVisible(topHome)) targetLink = topHome;
+                else if(isVisible(siteLogo)) targetLink = siteLogo;
                 if(!targetLink) return;
-                // Apply focus and highlight
-                try{ targetLink.focus({ preventScroll: true }); }catch(e){}
+
+                // Apply focus and a visible highlight (use inline styles when utility classes may be purged)
+                try{ targetLink.focus({ preventScroll: true }); }catch(e){ /* ignore */ }
+
                 const circle = document.getElementById('bottom-home-circle');
-                if(circle){ circle.classList.add('ring-2', 'ring-emerald-400'); circle.classList.add('scale-[1.06]'); setTimeout(()=>{ circle.classList.remove('ring-2','ring-emerald-400','scale-[1.06]'); }, 2500); }
-                else { // add temporary outline to top link
-                    targetLink.classList.add('ring-2','ring-emerald-400'); setTimeout(()=>{ targetLink.classList.remove('ring-2','ring-emerald-400'); }, 2500);
+                if(circle && isVisible(circle)){
+                    // prefer visible bottom circle effect
+                    circle.classList.add('ring-2', 'ring-emerald-400');
+                    circle.style.transform = 'scale(1.06)';
+                    setTimeout(()=>{ circle.classList.remove('ring-2','ring-emerald-400'); circle.style.transform = ''; }, 2500);
+                } else {
+                    // fallback: apply temporary inline outline and shadow so it shows on mobile
+                    const prevOutline = targetLink.style.outline || '';
+                    const prevBox = targetLink.style.boxShadow || '';
+                    targetLink.style.outline = '3px solid rgba(16,185,129,0.28)';
+                    targetLink.style.boxShadow = '0 10px 28px rgba(16,185,129,0.12)';
+                    setTimeout(()=>{ targetLink.style.outline = prevOutline; targetLink.style.boxShadow = prevBox; }, 2500);
                 }
+
                 localStorage.setItem('umkm_first_open_done','1');
             });
         }catch(e){ /* ignore */ }
