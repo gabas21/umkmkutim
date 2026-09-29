@@ -571,6 +571,7 @@ class HomeController extends Controller
                         'rating' => (float) ($umkm->rating ?? 0),
                         'alamat' => $umkm->alamat ?? $umkm->kecamatan ?? 'Kutim',
                         'jarak_km' => 2.4 + ($umkm->id % 5),
+                        'foto_utama' => $this->resolveUmkmImage($umkm->foto_utama, $umkm->kategori?->nama ?? null),
                     ];
                 })
                 ->toArray();
