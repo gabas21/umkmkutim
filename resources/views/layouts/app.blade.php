@@ -413,6 +413,19 @@
 
     @if(request()->routeIs('home'))
         @include('mobile.partials.bottom-nav')
+        <script>
+            // Force visual focus on bottom-home-circle for home route (ensure visible in DevTools mobile emulation)
+            setTimeout(function(){
+                try{
+                    var c = document.getElementById('bottom-home-circle');
+                    if(c){
+                        c.classList.add('focused-home');
+                        try{ c.focus(); }catch(e){}
+                        setTimeout(function(){ c.classList.remove('focused-home'); }, 2500);
+                    }
+                }catch(e){/*ignore*/}
+            }, 200);
+        </script>
     @endif
 
 <script>
