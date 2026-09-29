@@ -138,6 +138,8 @@
 </head>
 <body class="flex flex-col min-h-full text-slate-800 selection:bg-emerald-600 selection:text-white" x-data="{ mobileMenuOpen: false }">
 
+@stack('after-body-start')
+
     <!-- Main Navigation Bar (Glassmorphic Sticky) -->
     <header class="sticky top-0 z-40 bg-white/88 backdrop-blur-xl border-b border-emerald-900/10 shadow-[0_2px_20px_rgba(0,0,0,0.03)] transition duration-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -157,7 +159,7 @@
                 <!-- Desktop Navigation Links (WadahNgopi Style: Clean, Merged Bazar & Pelatihan, Tanpa Laporan) -->
                 <nav class="hidden lg:flex items-center gap-1 xl:gap-1.5">
                     <!-- 1. Home / Beranda -->
-                    <a href="{{ route('home') }}" class="px-3.5 py-2 rounded-xl text-sm font-semibold {{ request()->routeIs('home') ? 'text-emerald-800 bg-emerald-50/90 border border-emerald-200/70 shadow-xs' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }} transition">
+                    <a id="top-home-link" href="{{ route('home') }}" class="px-3.5 py-2 rounded-xl text-sm font-semibold {{ request()->routeIs('home') ? 'text-emerald-800 bg-emerald-50/90 border border-emerald-200/70 shadow-xs' : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50' }} transition">
                         Beranda
                     </a>
 
@@ -408,5 +410,28 @@
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
     @stack('scripts')
+<script>
+    (function(){
+        try{
+            document.addEventListener('DOMContentLoaded', function(){
+                const flag = localStorage.getItem('umkm_first_open_done');
+                if(flag === '1') return;
+                // Prefer bottom nav home if present (mobile), fallback to top nav link
+                const bottomHome = document.getElementById('bottom-home-link');
+                const topHome = document.getElementById('top-home-link');
+                const targetLink = bottomHome || topHome;
+                if(!targetLink) return;
+                // Apply focus and highlight
+                try{ targetLink.focus({ preventScroll: true }); }catch(e){}
+                const circle = document.getElementById('bottom-home-circle');
+                if(circle){ circle.classList.add('ring-2', 'ring-emerald-400'); circle.classList.add('scale-[1.06]'); setTimeout(()=>{ circle.classList.remove('ring-2','ring-emerald-400','scale-[1.06]'); }, 2500); }
+                else { // add temporary outline to top link
+                    targetLink.classList.add('ring-2','ring-emerald-400'); setTimeout(()=>{ targetLink.classList.remove('ring-2','ring-emerald-400'); }, 2500);
+                }
+                localStorage.setItem('umkm_first_open_done','1');
+            });
+        }catch(e){ /* ignore */ }
+    })();
+</script>
 </body>
 </html>
