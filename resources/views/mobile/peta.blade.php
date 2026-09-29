@@ -290,16 +290,14 @@
                     resp.data.forEach(p => {
                         if(!p.lat || !p.lng) return;
                         const marker = L.circleMarker([p.lat, p.lng], { radius: 6, color: '#16a34a', fillColor: '#34d399', fillOpacity: 0.9 }).addTo(dataLayer);
-                                        const imgSrc = p.foto_utama || '{{ asset("umkm.png") }}';
-                                        const popup = '<div style="min-width:240px;display:flex;gap:10px;align-items:flex-start">'
-                                            + '<img src="'+escapeHtml(imgSrc)+'" style="width:86px;height:86px;object-fit:cover;border-radius:8px;flex:0 0 86px;"/>'
-                                            + '<div>'
-                                                + '<div style="font-weight:700;font-size:14px;margin-bottom:6px;">'+escapeHtml(p.nama_usaha || p.nama || 'UMKM')+'</div>'
-                                                + '<div style="font-size:13px;color:#374151;">'+escapeHtml(p.kategori || '')+'<br/>'
-                                                + '<a href="'+(p.url || '#')+'" style="color:#0ea5a4;">Lihat detail</a></div>'
-                                            + '</div>'
-                                        + '</div>';
-                                        marker.bindPopup(popup);
+                        const imgSrc = p.foto_utama || '{{ asset("umkm.png") }}';
+                        const popup = '<div style="min-width:220px;text-align:center;padding:6px 8px">'
+                            + '<img src="'+escapeHtml(imgSrc)+'" style="width:100%;max-width:260px;height:140px;object-fit:cover;border-radius:10px;margin-bottom:8px;"/>'
+                            + '<div style="font-weight:700;font-size:15px;margin-bottom:6px;color:#111827;">'+escapeHtml(p.nama_usaha || p.nama || 'UMKM')+'</div>'
+                            + '<div style="font-size:13px;color:#374151;margin-bottom:10px;">'+escapeHtml(p.kategori || '')+'</div>'
+                            + '<div><a href="'+(p.url || '#')+'" style="display:inline-block;padding:8px 12px;background:#10b981;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Lihat detail</a></div>'
+                        + '</div>';
+                        marker.bindPopup(popup);
                                     });
                                 } else if(resp.mode === 'clusters'){
                     resp.data.forEach(c => {
