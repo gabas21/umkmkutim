@@ -51,8 +51,53 @@ class HomeController extends Controller
         ];
     }
 
+    private function loadUmkmPromoContent(): array
+    {
+        if (! $this->hasTable('umkm')) {
+            return [];
+        }
+
+        try {
+            return Umkm::query()
+                ->where('status', 'active')
+                ->with('kategori:id,nama')
+                ->orderByDesc('rating')
+                ->orderByDesc('jumlah_review')
+                ->limit(3)
+                ->get()
+                ->map(function ($umkm, $index) {
+                    $namaUsaha = trim((string) ($umkm->nama_usaha ?? 'UMKM Kutim'));
+                    $kecamatan = trim((string) ($umkm->kecamatan ?? ''));
+                    $alamat = trim((string) ($umkm->alamat ?? ''));
+                    $deskripsi = trim((string) ($umkm->deskripsi ?? ''));
+
+                    return [
+                        'title' => 'Promo '.$namaUsaha,
+                        'type' => $index === 0 ? 'PROMO' : 'UMKM',
+                        'location' => $kecamatan !== '' ? $kecamatan : ($alamat !== '' ? $alamat : 'Kutim'),
+                        'start_date' => now(),
+                        'status' => 'active',
+                        'shop' => $namaUsaha,
+                        'description' => $deskripsi !== ''
+                            ? 'Nikmati promo spesial dari '.$namaUsaha.' di '.($kecamatan !== '' ? $kecamatan : 'Kutim').'. '.Str::limit(preg_replace('/\s+/', ' ', $deskripsi), 120)
+                            : 'Nikmati promo spesial dari '.$namaUsaha.' di '.($kecamatan !== '' ? $kecamatan : 'Kutim').'. Produk lokal pilihan yang siap mendukung kebutuhan harianmu.',
+                        'image' => $this->resolveUmkmImage($umkm->foto_utama, $umkm->kategori->nama ?? null),
+                        'badge' => 'UMKM',
+                    ];
+                })
+                ->toArray();
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
     private function loadPromoContent(): array
     {
+        $umkmPromos = $this->loadUmkmPromoContent();
+        if (! empty($umkmPromos)) {
+            return $umkmPromos;
+        }
+
         $fallback = [
             ['title' => 'Pameran UMKM Kutim', 'location' => 'Sangatta', 'start_date' => now()->addDays(4), 'status' => 'open'],
             ['title' => 'Diskon 20% Produk Lokal', 'location' => 'Kota', 'start_date' => now()->addDays(12), 'status' => 'open'],
@@ -147,7 +192,7 @@ class HomeController extends Controller
         return '<i class="fa-solid fa-'.$faNameSafe.'"></i>';
     }
 
-    private function resolveUmkmImage(?string $fotoUtama = null): string
+    private function resolveUmkmImage(?string $fotoUtama = null, ?string $kategori = null): string
     {
         if (! empty($fotoUtama)) {
             if (str_starts_with($fotoUtama, 'http://') || str_starts_with($fotoUtama, 'https://')) {
@@ -156,6 +201,49 @@ class HomeController extends Controller
 
             if (Storage::disk('public')->exists($fotoUtama)) {
                 return Storage::url($fotoUtama);
+            }
+        }
+
+        // Attempt to use category-specific cover images placed in public/sampul
+        $kategori = trim((string) $kategori);
+        if ($kategori !== '') {
+            $search = strtolower($kategori);
+            $dir = public_path('sampul');
+            if (is_dir($dir)) {
+                $files = @scandir($dir);
+                if ($files !== false) {
+                    // First try a direct substring match against filenames
+                    foreach ($files as $file) {
+                        if ($file === '.' || $file === '..') {
+                            continue;
+                        }
+
+                        $fname = strtolower($file);
+                        if (str_contains($fname, $search)) {
+                            return asset('sampul/'.str_replace(' ', '%20', $file));
+                        }
+                    }
+
+                    // If no direct match, try matching any token from the category name
+                    $tokens = preg_split('/\s+|&|,|-|_/', $search);
+                    foreach ($files as $file) {
+                        if ($file === '.' || $file === '..') {
+                            continue;
+                        }
+
+                        $fname = strtolower($file);
+                        foreach ($tokens as $t) {
+                            $t = trim($t);
+                            if ($t === '') {
+                                continue;
+                            }
+
+                            if (str_contains($fname, $t)) {
+                                return asset('sampul/'.str_replace(' ', '%20', $file));
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -288,7 +376,7 @@ class HomeController extends Controller
 
     /**
      * @param  array<int, mixed>  $products
-     * @return array<int, array{name: string, price: string, description: string, image: string, badge: string}>
+     * @return array<int, array{name: string, price: string, description: string, image: string, badge: string, category: string}>
      */
     private function buildCatalogProducts(array $products, string $fallbackImage): array
     {
@@ -301,21 +389,26 @@ class HomeController extends Controller
 
         $fallbackPrices = [18000, 25000, 32000, 45000];
         $fallbackBadges = ['Terlaris', 'Favorit', 'Rekomendasi', 'Baru'];
+        $fallbackCategories = ['Promo', 'Makanan', 'Minuman', 'Snack', 'Kerajinan', 'Fashion'];
 
         return collect($products)
             ->filter(fn ($product) => filled($product))
             ->values()
-            ->map(function ($product, $index) use ($fallbackDescriptions, $fallbackPrices, $fallbackBadges, $fallbackImage) {
+            ->map(function ($product, $index) use ($fallbackDescriptions, $fallbackPrices, $fallbackBadges, $fallbackCategories, $fallbackImage) {
                 $name = is_array($product) ? (string) ($product['name'] ?? $product['nama'] ?? 'Produk UMKM') : (string) $product;
+                $category = is_array($product)
+                    ? (string) ($product['category'] ?? $product['kategori'] ?? $product['kategory'] ?? $product['jenis'] ?? '')
+                    : '';
 
                 return [
                     'name' => $name,
                     'price' => 'Rp '.number_format($fallbackPrices[$index % count($fallbackPrices)], 0, ',', '.'),
                     'description' => $fallbackDescriptions[$index % count($fallbackDescriptions)],
                     'image' => is_array($product) && filled($product['image'] ?? null)
-                        ? $this->resolveUmkmImage((string) $product['image'])
+                        ? $this->resolveUmkmImage((string) $product['image'], is_array($product) ? ($product['category'] ?? $product['kategori'] ?? null) : null)
                         : $fallbackImage,
                     'badge' => $fallbackBadges[$index % count($fallbackBadges)],
+                    'category' => $category !== '' ? $category : $fallbackCategories[$index % count($fallbackCategories)],
                 ];
             })
             ->take(6)
@@ -348,7 +441,7 @@ class HomeController extends Controller
                             'rating' => (float) ($umkm->rating ?? 0),
                             'alamat' => $umkm->alamat ?? $umkm->kecamatan ?? 'Kutim',
                             'jarak_km' => 2.4 + ($umkm->id % 5),
-                            'foto_utama' => $this->resolveUmkmImage($umkm->foto_utama),
+                            'foto_utama' => $this->resolveUmkmImage($umkm->foto_utama, $umkm->kategori?->nama ?? null),
                         ];
                     })
                     ->toArray();
@@ -535,7 +628,7 @@ class HomeController extends Controller
                 ->first();
 
             if ($umkm) {
-                $fallbackImage = $this->resolveUmkmImage($umkm->foto_utama);
+                $fallbackImage = $this->resolveUmkmImage($umkm->foto_utama, $umkm->kategori?->nama ?? null);
                 $catalogProducts = $this->buildCatalogProducts(
                     is_array($umkm->produk_unggulan ?? null) ? $umkm->produk_unggulan : ['Produk unggulan 1', 'Produk unggulan 2', 'Produk unggulan 3'],
                     $fallbackImage
@@ -803,15 +896,21 @@ class HomeController extends Controller
         $promoItems = collect($this->loadPromoContent())
             ->map(function ($item, $index) {
                 $date = $item['start_date'] ?? now()->addDays($index + 1);
+                $shop = $item['shop'] ?? ($item['title'] ?? 'UMKM Kutim');
+                $description = $item['description'] ?? 'Nikmati promo spesial dari UMKM lokal di Kutim.';
+                $image = $item['image'] ?? 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=900&q=80';
 
                 return [
                     'title' => $item['title'] ?? 'Promo UMKM',
-                    'type' => $index === 0 ? 'ACARA' : 'PROMO',
+                    'type' => strtoupper((string) ($item['type'] ?? ($index === 0 ? 'ACARA' : 'PROMO'))),
                     'location' => $item['location'] ?? 'Kutim',
                     'date' => $date instanceof \DateTimeInterface
                         ? Carbon::parse($date)->format('d M Y')
                         : (is_string($date) ? Carbon::parse($date)->format('d M Y') : '12 Sep 2026'),
-                    'badge' => $index === 0 ? 'Event' : 'Promo',
+                    'badge' => $item['badge'] ?? ($index === 0 ? 'Event' : 'Promo'),
+                    'shop' => $shop,
+                    'description' => $description,
+                    'image' => $image,
                 ];
             })
             ->take(3)
@@ -896,7 +995,7 @@ class HomeController extends Controller
                 ->values()
                 ->all();
 
-            return view('mobile.home', $data);
+            return view('mobile.preview', $data);
         }
 
         $daftarKecamatan = [
