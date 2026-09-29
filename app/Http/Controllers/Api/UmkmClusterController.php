@@ -81,7 +81,7 @@ class UmkmClusterController extends Controller
 
             if ($zoom > 10 && $minLat !== null && $maxLat !== null && $minLng !== null && $maxLng !== null) {
                 $polygon = "POLYGON(($minLng $minLat, $maxLng $minLat, $maxLng $maxLat, $minLng $maxLat, $minLng $minLat))";
-                $query->whereRaw("MBRContains(ST_GeomFromText(?, 4326, 'axis-order=long-lat'), location)", [$polygon]);
+                $query->whereRaw("MBRContains(ST_GeomFromText(?, 4326), location)", [$polygon]);
             }
 
             if ($request->filled('kecamatan')) {
