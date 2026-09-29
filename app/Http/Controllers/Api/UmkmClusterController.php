@@ -44,11 +44,11 @@ class UmkmClusterController extends Controller
         $neLat = (float) $request->ne_lat;
         $neLng = (float) $request->ne_lng;
 
+        // gridSize null => return individual points (switch to points mode at zoom >= 14)
         $gridSize = match (true) {
             $zoom <= 9  => 0.10,
             $zoom <= 11 => 0.05,
             $zoom <= 13 => 0.02,
-            $zoom <= 14 => 0.008,
             default     => null,
         };
 
