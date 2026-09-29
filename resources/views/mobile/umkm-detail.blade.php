@@ -69,6 +69,9 @@
                         <p class="section-label text-[9px] font-semibold text-brand-700">UMKM</p>
                         <h1 class="text-[18px] font-black text-slate-900">Detail usaha</h1>
                     </div>
+                    <button id="share-btn" aria-label="Bagikan" class="ml-3 flex h-10 items-center justify-center rounded-2xl bg-white text-sm font-semibold text-slate-700 shadow-soft border border-slate-200 px-3">
+                        <i class="fa-solid fa-share-nodes"></i>
+                    </button>
                 </header>
 
                 @php
@@ -520,6 +523,29 @@
                     return event.returnValue;
                 }
             });
+
+            // Share button (mobile): use native share where available, fallback to copy link
+            const shareBtn = document.getElementById('share-btn');
+            const showShareToast = (msg) => {
+                let t = document.getElementById('share-toast');
+                if(!t){ t = document.createElement('div'); t.id = 'share-toast'; t.style.position = 'fixed'; t.style.left = '50%'; t.style.transform = 'translateX(-50%)'; t.style.bottom = '20px'; t.style.zIndex = 99999; t.style.padding = '10px 14px'; t.style.borderRadius = '12px'; t.style.fontWeight = '600'; t.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; document.body.appendChild(t); }
+                t.style.background = '#10b981'; t.style.color = '#fff'; t.textContent = msg; t.style.display = 'block'; setTimeout(()=>{ t.style.display = 'none'; }, 3500);
+            };
+
+            if(shareBtn){
+                shareBtn.addEventListener('click', async function(){
+                    const title = {!! json_encode($detail['nama_usaha'] ?? '') !!};
+                    const text = {!! json_encode(mb_substr($detail['deskripsi'] ?? '', 0, 140)) !!};
+                    const url = window.location.href;
+                    if(navigator.share){
+                        try{ await navigator.share({ title: title, text: text, url: url }); } catch(e){ /* user cancelled or error */ }
+                    } else if(navigator.clipboard && navigator.clipboard.writeText){
+                        try{ await navigator.clipboard.writeText(url); showShareToast('Link tersalin ke clipboard'); } catch(e){ prompt('Salin link ini:', url); }
+                    } else {
+                        prompt('Salin link ini:', url);
+                    }
+                });
+            }
 
             renderCart();
         })();
