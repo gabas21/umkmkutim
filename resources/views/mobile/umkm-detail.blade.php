@@ -93,13 +93,20 @@
                     $catalogProducts = $detail['catalog_products'] ?? [];
                 @endphp
 
-                <section class="mb-4 overflow-hidden rounded-[28px] border border-emerald-100 bg-gradient-to-r from-[#dff5e4] via-[#f7fdf8] to-[#f0ecdb] shadow-soft">
-                    <div class="h-44 bg-gradient-to-br from-[#d9f1df] via-[#f6fdf8] to-[#f2e7cb] p-4 flex items-end">
-                        <div>
-                            <p class="section-label text-[9px] font-semibold text-brand-700">{{ strtoupper($detail['kategori']['nama'] ?? 'UMKM') }}</p>
-                            <h2 class="mt-2 text-[26px] font-black tracking-tight text-slate-900">{{ $detail['nama_usaha'] }}</h2>
+                <section class="mb-4 overflow-hidden rounded-[28px] border border-emerald-100 shadow-soft">
+                    @php
+                        $foto = $detail['foto_utama'] ?? null;
+                        $fotoUrl = $foto ? (str_starts_with($foto, 'http') ? $foto : asset($foto)) : asset('umkm.png');
+                    @endphp
+                    <div class="relative h-44 bg-slate-100">
+                        <img src="{{ $fotoUrl }}" alt="{{ $detail['nama_usaha'] ?? 'UMKM' }}" loading="lazy" class="w-full h-full object-cover rounded-t-[26px]" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-t-[26px]"></div>
+                        <div class="absolute left-4 bottom-4 text-white">
+                            <p class="section-label text-[9px] font-semibold text-white/90">{{ strtoupper($detail['kategori']['nama'] ?? 'UMKM') }}</p>
+                            <h2 class="mt-1 text-[20px] font-black tracking-tight">{{ $detail['nama_usaha'] }}</h2>
                         </div>
                     </div>
+
                     <div class="p-4">
                         <div class="mb-3 flex items-center justify-between">
                             <span class="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">★ {{ number_format((float) ($detail['rating'] ?? 4.8), 1) }}</span>
