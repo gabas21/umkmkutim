@@ -1,4 +1,4 @@
-<nav class="fixed inset-x-0 bottom-0 z-40 w-full px-1.5 pb-2 pt-1.5">
+<nav class="fixed inset-x-0 bottom-0 z-40 w-full px-1.5 pb-2 pt-1.5 md:hidden">
     <style>
         /* Focus helper for Home circle — use !important so it shows in devtools mobile emulation */
         .focused-home {
