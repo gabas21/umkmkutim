@@ -6,6 +6,8 @@
             outline: 3px solid rgba(16,185,129,0.24) !important;
             transform: scale(1.08) !important;
             transition: transform 180ms ease, box-shadow 180ms ease, outline 180ms ease;
+            background-color: rgba(16,185,129,0.10) !important; /* subtle green background */
+            color: #065f46 !important; /* darker green for icon */
         }
     </style>
     <div class="flex justify-center">
