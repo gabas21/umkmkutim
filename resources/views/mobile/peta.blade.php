@@ -305,9 +305,96 @@
 
                                     const MAX_CLIENT_POINTS = 1500; // cap to avoid freezing low-end devices
                                     let points = resp.data || [];
+                                    let expectedCount = points.length;
                                     if(points.length > MAX_CLIENT_POINTS){
                                         showToast('Menampilkan sebagian titik untuk performa. Perbesar zoom untuk melihat lebih banyak.', 'warning', 6000);
                                         points = points.slice(0, MAX_CLIENT_POINTS);
+                                        expectedCount = points.length;
+                                    }
+
+                                    // Progress UI for chunked loading (created only once) with SVG spinner and smooth transitions
+                                    let progressEl = document.getElementById('map-progress');
+                                    if(!progressEl){
+                                        progressEl = document.createElement('div');
+                                        progressEl.id = 'map-progress';
+                                        progressEl.style.position = 'fixed';
+                                        progressEl.style.left = '50%';
+                                        // start slightly translated down for enter animation
+                                        progressEl.style.transform = 'translateX(-50%) translateY(8px)';
+                                        progressEl.style.bottom = '84px';
+                                        progressEl.style.zIndex = 99999;
+                                        progressEl.style.width = '86%';
+                                        progressEl.style.maxWidth = '560px';
+                                        progressEl.style.background = 'rgba(255,255,255,0.95)';
+                                        progressEl.style.boxShadow = '0 12px 30px rgba(0,0,0,0.12)';
+                                        progressEl.style.borderRadius = '12px';
+                                        progressEl.style.padding = '10px 12px';
+                                        progressEl.style.fontFamily = 'sans-serif';
+                                        progressEl.style.opacity = '0';
+                                        progressEl.style.transition = 'opacity 0.28s ease, transform 0.28s ease';
+                                        progressEl.style.display = 'none';
+
+                                        // SVG spinner (static rotation) + main and sub text
+                                        progressEl.innerHTML = '\n                                            <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:8px">'
+                                            + '  <svg id="map-progress-spinner" width="18" height="18" viewBox="0 0 50 50" style="flex:0 0 auto;">'
+                                            + '    <circle cx="25" cy="25" r="20" fill="none" stroke="#e6f3ee" stroke-width="6"/>'
+                                            + '    <path id="map-progress-spinner-path" d="M25 5a20 20 0 0 1 0 40" stroke="#10b981" stroke-width="6" stroke-linecap="round" fill="none"></path>'
+                                            + '  </svg>'
+                                            + '  <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">'
+                                            + '    <div id="map-progress-text" style="font-weight:700;color:#064e3b;font-size:13px">Memuat 0/'+expectedCount+' titik</div>'
+                                            + '    <div id="map-progress-sub" style="font-size:11px;color:#065f46;opacity:0.9">Mempercepat pemrosesan data...</div>'
+                                            + '  </div>'
+                                            + '</div>'
+                                            + '<div style="height:8px;background:#f0f0f0;border-radius:8px;overflow:hidden"><div id="map-progress-bar" style="height:8px;width:0%;background:#10b981;border-radius:8px;transition:width 220ms linear"></div></div>'
+                                            + '<style>\n#map-progress-spinner{animation: map-rotate 1.2s linear infinite;}\n@keyframes map-rotate{100%{transform:rotate(360deg);}}\n</style>'; 
+
+                                        document.body.appendChild(progressEl);
+
+                                        // helper functions to show/hide with smooth transitions
+                                        function showProgress(){
+                                            try{
+                                                progressEl.style.display = 'block';
+                                                // force reflow so transition runs
+                                                void progressEl.offsetWidth;
+                                                progressEl.style.transform = 'translateX(-50%) translateY(0)';
+                                                progressEl.style.opacity = '1';
+                                            } catch(e){}
+                                        }
+                                        function hideProgress(){
+                                            try{
+                                                progressEl.style.opacity = '0';
+                                                progressEl.style.transform = 'translateX(-50%) translateY(8px)';
+                                                setTimeout(function(){ try{ progressEl.style.display = 'none'; }catch(e){} }, 320);
+                                            } catch(e){}
+                                        }
+
+                                        // attach helpers to the element so they can be used later in this scope
+                                        progressEl._show = showProgress;
+                                        progressEl._hide = hideProgress;
+                                    }
+                                    // ensure text reflects expectedCount
+                                    const progressTextEl = document.getElementById('map-progress-text');
+                                    const progressBarEl = document.getElementById('map-progress-bar');
+                                    if(progressTextEl) progressTextEl.textContent = 'Memuat 0/'+expectedCount+' titik';
+                                    if(progressBarEl) progressBarEl.style.width = '0%';
+                                    // show/hide with transition
+                                    if(expectedCount > 0 && progressEl._show) { progressEl._show(); } else if(progressEl._hide) { progressEl._hide(); }
+
+                                    // Start polling progress of markers added to cluster group
+                                    let progressInterval = null;
+                                    if(expectedCount > 0){
+                                        progressInterval = setInterval(function(){
+                                            try{
+                                                const added = markerClusterGroup.getLayers().length || 0;
+                                                const pct = Math.min(100, Math.round((added / expectedCount) * 100));
+                                                if(progressTextEl) progressTextEl.textContent = 'Memuat '+added+'/'+expectedCount+' titik';
+                                                if(progressBarEl) progressBarEl.style.width = pct + '%';
+                                                if(added >= expectedCount){
+                                                    clearInterval(progressInterval);
+                                                    try{ if(progressEl && progressEl._hide) progressEl._hide(); }catch(e){}
+                                                }
+                                            } catch(e){ /* ignore */ }
+                                        }, 250);
                                     }
 
                                     points.forEach(p => {
@@ -326,10 +413,21 @@
                                         markerClusterGroup.addLayer(m);
                                     });
 
+                                    // If there were zero points, hide progress and clear interval
+                                    if(expectedCount === 0){
+                                        try{ if(progressEl && progressEl._hide) progressEl._hide(); if(progressInterval) clearInterval(progressInterval); } catch(e){}
+                                    }
+
                                     // Restore previously open popup if present
                                     if(preservedOpenId){
                                         const found = idToMarker.get(preservedOpenId);
                                         if(found) { found.openPopup(); }
+                                    }
+
+                                    // safety: ensure interval cleared when cluster has processed all layers
+                                    if(typeof progressInterval !== 'undefined' && progressInterval !== null){
+                                        // in case markerClusterGroup doesn't reflect queued layers immediately, set a fallback timeout to clear after 8s
+                                        setTimeout(()=>{ try{ clearInterval(progressInterval); if(progressEl && progressEl._hide) progressEl._hide(); }catch(e){} }, 8000);
                                     }
 
                                 } else if(resp.mode === 'clusters'){
@@ -345,8 +443,16 @@
                         const marker = L.marker([c.lat, c.lng], { icon }).addTo(dataLayer);
                         const popup = '<div style="min-width:140px"><div style="font-weight:700;font-size:14px;margin-bottom:6px;">'+escapeHtml(c.kecamatan || 'Area')+'</div><div style="font-size:13px;color:#374151;">Titik: '+label+'</div></div>';
                         marker.bindPopup(popup);
-                        // click to zoom in if cluster
-                        marker.on('click', function(){ if(count > 1){ map.setView([c.lat, c.lng], Math.min(18, map.getZoom() + 2)); } });
+                        // click to zoom in and only then load detailed points for the cluster area
+                        marker.on('click', function(){
+                            if(count > 1){
+                                const targetZoom = Math.min(18, Math.max(map.getZoom() + 2, 14));
+                                map.flyTo([c.lat, c.lng], targetZoom, { duration: 0.5, easeLinearity: 0.25 });
+                                setTimeout(function(){
+                                    try { fetchViewportData(); } catch (e) { console.warn('Cluster detail fetch failed', e); }
+                                }, 420);
+                            }
+                        });
                     });
                     if(resp.truncated){ showToast('Hasil dipersempit - tampil sebagian. Coba perbesar tingkat zoom atau batasi filter.', 'warning', 7000); }
                 }
