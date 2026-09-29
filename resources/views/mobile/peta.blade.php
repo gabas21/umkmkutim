@@ -123,103 +123,236 @@
         document.addEventListener('DOMContentLoaded', function(){
             const mapEl = document.getElementById('leaflet-map');
             if(!mapEl) return;
+
+            // initial center fallback
             const nearby = {!! json_encode($nearbyUmkm ?? []) !!};
-            // determine center
-            let center = [0,0];
+            let center = [0, 0];
             if(nearby.length){
                 const first = nearby.find(i => i.latitude && i.longitude) || nearby[0];
-                center = [parseFloat(first.latitude || first.lat || first.lat_point || 0), parseFloat(first.longitude || first.lng || first.lon || first.long || 0)];
+                center = [parseFloat(first.latitude || first.lat || 0), parseFloat(first.longitude || first.lng || 0)];
             }
-            const map = L.map('leaflet-map', { zoomControl: false }).setView(center, nearby.length ? 13 : 5);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
+
+            const map = L.map('leaflet-map', { zoomControl: false }).setView(center, nearby.length ? 13 : 6);
+
+            // Configure tile provider via environment variables: MAP_TILE_PROVIDER (osm|mapbox|maptiler), MAP_TILE_KEY, MAP_TILE_STYLE / MAPBOX_STYLE
+            const _provider = '{{ config("map.provider", "osm") }}'.toLowerCase();
+            const _tileKey = '{{ config("map.key", "") }}';
+            const _mapStyle = '{{ config("map.style", "streets") }}';
+            const _mapboxStyle = '{{ config("map.mapbox_style", "mapbox/streets-v11") }}';
+
+            let tileLayer;
+            let fallbackApplied = false;
+
+            // small on-screen debug panel for mobile (temporary)
+            const debugPanel = document.createElement('div');
+            debugPanel.id = 'map-debug';
+            debugPanel.style.position = 'fixed';
+            debugPanel.style.right = '12px';
+            debugPanel.style.top = '12px';
+            debugPanel.style.zIndex = 99999;
+            debugPanel.style.background = 'rgba(0,0,0,0.65)';
+            debugPanel.style.color = '#fff';
+            debugPanel.style.padding = '8px 10px';
+            debugPanel.style.borderRadius = '8px';
+            debugPanel.style.fontSize = '12px';
+            debugPanel.style.fontFamily = 'sans-serif';
+            debugPanel.style.display = 'none';
+            document.body.appendChild(debugPanel);
+
+            function debug(msg){
+                try{
+                    console.log('[MAP-DEBUG]', msg);
+                    debugPanel.textContent = String(msg);
+                    debugPanel.style.display = 'block';
+                    clearTimeout(debug._t);
+                    debug._t = setTimeout(function(){ debugPanel.style.display = 'none'; }, 8000);
+                } catch(e){ console.log('[MAP-DEBUG-ERR]', e); }
+            }
+
+            // helper to create OSM default
+            function createOsmLayer(){
+                return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                });
+            }
+
+            // decide tile layer based on provider
+            try {
+                if(_provider === 'mapbox' && _tileKey){
+                    // Mapbox styles API
+                    const mapboxUrl = 'https://api.mapbox.com/styles/v1/' + _mapboxStyle + '/tiles/{z}/{x}/{y}?access_token=' + _tileKey;
+                    tileLayer = L.tileLayer(mapboxUrl, { attribution: '© Mapbox © OpenStreetMap contributors', tileSize: 512, zoomOffset: -1, maxZoom: 20 }).addTo(map);
+                } else if(_provider === 'maptiler' && _tileKey){
+                    // MapTiler (style names like streets, basic, topo, etc.)
+                    const maptilerUrl = 'https://api.maptiler.com/tiles/' + _mapStyle + '/{z}/{x}/{y}.png?key=' + _tileKey;
+                    tileLayer = L.tileLayer(maptilerUrl, { attribution: '© MapTiler © OpenStreetMap contributors' }).addTo(map);
+                } else {
+                    tileLayer = createOsmLayer().addTo(map);
+                }
+                debug('Tile provider: '+_provider+( _tileKey ? ' (key provided)' : ' (no key)'));
+            } catch(e){
+                console.warn('Failed to initialize preferred tile layer', e);
+                debug('Tile init failed: '+(e && e.message ? e.message : String(e)));
+                tileLayer = createOsmLayer().addTo(map);
+            }
+
+            // Fallback tile URL (Stamen Terrain) if primary tiles fail or rate-limited
+            const fallbackTileUrl = 'https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg';
+
+            // Basic tile error handler: switch once to fallback and notify user
+            if(tileLayer && tileLayer.on){
+                let tileLoadCount = 0;
+                let tileErrorCount = 0;
+
+                tileLayer.on('tileload', function(){
+                    tileLoadCount++;
+                    if(tileLoadCount % 5 === 0) debug('Tiles loaded: '+tileLoadCount);
+                });
+
+                tileLayer.on('tileerror', function(err){
+                    tileErrorCount++;
+                    console.warn('Tile error', err);
+                    debug('Tile error #'+tileErrorCount);
+                    if(!fallbackApplied){
+                        try { map.removeLayer(tileLayer); } catch(e){}
+                        tileLayer = L.tileLayer(fallbackTileUrl, { attribution: 'Map tiles by Stamen, CC BY 3.0 — Map data © OpenStreetMap contributors' }).addTo(map);
+                        fallbackApplied = true;
+                        debug('Using fallback tiles');
+                        showToast('Peta utama bermasalah — menggunakan fallback tiles. Jika sering terjadi, pertimbangkan menggunakan provider berbayar (Mapbox/Maptiler).', 'warning');
+                    }
+                });
+            } else {
+                // defensive: if tileLayer has no event support, still ensure fallbackApplied false
+                fallbackApplied = false;
+                debug('TileLayer has no event support');
+            }
+
             L.control.zoom({ position: 'topright' }).addTo(map);
 
-            // simple locate button
+            // Locate control (simple)
             const locateBtn = L.control({position: 'topright'});
             locateBtn.onAdd = function() {
                 const btn = L.DomUtil.create('button', 'rounded-full bg-white p-2 shadow ml-2');
                 btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i>';
                 btn.style.cursor = 'pointer';
                 btn.title = 'Lokasi saya';
-                L.DomEvent.on(btn, 'click', function(e){
-                    map.locate({setView: true, maxZoom: 16});
-                });
+                L.DomEvent.on(btn, 'click', function(e){ map.locate({setView: true, maxZoom: 16}); });
                 return btn;
             };
             locateBtn.addTo(map);
             map.on('locationerror', function(){ if(window.alert) alert('Tidak dapat menentukan lokasi Anda'); });
 
-            // markers
-            nearby.forEach(function(item){
-                const lat = parseFloat(item.latitude ?? item.lat ?? 0);
-                const lng = parseFloat(item.longitude ?? item.lng ?? 0);
-                if(!isFinite(lat) || !isFinite(lng)) return;
-                const marker = L.marker([lat,lng]).addTo(map);
-                const name = item.nama ?? item.name ?? item.title ?? 'UMKM';
-                const category = (item.kategori && item.kategori.nama) ? item.kategori.nama : (item.kategori_name ?? item.category ?? '');
-                const popupHtml = '<div style="min-width:180px"><div style="font-weight:700;font-size:14px;margin-bottom:6px;">'+name+'</div><div style="font-size:13px;color:#374151;">'+category+'</div></div>';
-                marker.bindPopup(popupHtml);
-            });
+            // Layer to hold current markers / clusters
+            const dataLayer = L.layerGroup().addTo(map);
 
-            // search suggestions: debounce + AJAX
-            const searchInput = document.getElementById('search-input');
-            const suggBox = document.getElementById('search-suggestions');
-            let debounceTimer = null;
+            // Client-side cache for viewport responses (keyed by rounded bbox+zoom+filters)
+            const cache = new Map();
+            const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
-            function escapeHtml(s){
-                return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; });
+            function roundCoord(v, precision = 3){ return Math.round(v * Math.pow(10, precision)) / Math.pow(10, precision); }
+            function buildCacheKey(sw, ne, zoom, q, kategori){
+                return [roundCoord(sw.lat), roundCoord(sw.lng), roundCoord(ne.lat), roundCoord(ne.lng), zoom, q || '', kategori || ''].join('_');
             }
 
-            function renderSuggestions(items){
-                if(!suggBox) return;
-                if(!items || items.length === 0){ suggBox.style.display = 'none'; suggBox.innerHTML = ''; return; }
-                suggBox.style.display = 'block';
-                suggBox.innerHTML = items.map(function(it){
-                    const lat = it.latitude ?? it.lat ?? '';
-                    const lng = it.longitude ?? it.lng ?? '';
-                    const name = it.nama_usaha ?? it.nama ?? '';
-                    const kategori = (it.kategori && it.kategori.nama) ? it.kategori.nama : (it.kategori_name ?? '');
-                    const alamat = it.alamat ?? '';
-                    return '<button data-lat="'+lat+'" data-lng="'+lng+'" data-name="'+escapeHtml(name)+'" class="w-full text-left px-3 py-2 hover:bg-slate-50 border-b last:border-b-0"><div class="text-sm font-semibold">'+escapeHtml(name)+'</div><div class="text-xs text-slate-500">'+escapeHtml(kategori)+' · '+escapeHtml(alamat)+'</div></button>';
-                }).join('');
+            // Simple debounce
+            function debounce(fn, wait){ let t; return function(...args){ clearTimeout(t); t = setTimeout(()=>fn.apply(this,args), wait); }; }
 
-                Array.from(suggBox.querySelectorAll('button')).forEach(function(btn){
-                    btn.addEventListener('click', function(){
-                        const lat = parseFloat(this.dataset.lat);
-                        const lng = parseFloat(this.dataset.lng);
-                        const name = this.dataset.name || '';
-                        if(searchInput) searchInput.value = name;
-                        suggBox.style.display = 'none';
-                        if(isFinite(lat) && isFinite(lng)){
-                            map.setView([lat,lng], 16);
-                            L.popup({maxWidth:260}).setLatLng([lat,lng]).setContent('<div style="font-weight:700">'+escapeHtml(name)+'</div>').openOn(map);
-                        }
+            // Small toast helper
+            function showToast(message, type = 'success', duration = 5000){
+                let toast = document.getElementById('map-toast');
+                if(!toast){
+                    toast = document.createElement('div');
+                    toast.id = 'map-toast';
+                    toast.style.position = 'fixed';
+                    toast.style.left = '50%';
+                    toast.style.transform = 'translateX(-50%)';
+                    toast.style.top = '12px';
+                    toast.style.zIndex = 99999;
+                    toast.style.padding = '10px 14px';
+                    toast.style.borderRadius = '12px';
+                    toast.style.fontWeight = '600';
+                    toast.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
+                    document.body.appendChild(toast);
+                }
+                toast.style.background = type === 'warning' ? '#fbbf24' : (type === 'error' ? '#ef4444' : '#10b981');
+                toast.style.color = '#fff';
+                toast.textContent = message;
+                toast.style.display = 'block';
+                setTimeout(()=>{ toast.style.display = 'none'; }, duration);
+            }
+
+            // Render clusters/points response into map
+            function renderResponse(resp){
+                dataLayer.clearLayers();
+                if(!resp || !resp.data) return;
+
+                if(resp.mode === 'points'){
+                    resp.data.forEach(p => {
+                        if(!p.lat || !p.lng) return;
+                        const marker = L.circleMarker([p.lat, p.lng], { radius: 6, color: '#16a34a', fillColor: '#34d399', fillOpacity: 0.9 }).addTo(dataLayer);
+                        const popup = '<div style="min-width:180px"><div style="font-weight:700;font-size:14px;margin-bottom:6px;">'+escapeHtml(p.nama_usaha || p.nama || 'UMKM')+'</div><div style="font-size:13px;color:#374151;">'+escapeHtml(p.kategori || '')+'<br/><a href="'+(p.url || '#')+'" style="color:#0ea5a4;">Lihat detail</a></div></div>';
+                        marker.bindPopup(popup);
                     });
-                });
+                } else if(resp.mode === 'clusters'){
+                    resp.data.forEach(c => {
+                        if(!c.lat || !c.lng) return;
+                        const count = c.count || 0;
+                        const radius = Math.min(40, 8 + Math.log10(Math.max(1, count)) * 8);
+                        const marker = L.circleMarker([c.lat, c.lng], { radius: radius, color: '#0ea5a4', weight: 2, fillColor: '#34d399', fillOpacity: 0.85 }).addTo(dataLayer);
+                        const label = count >= 1000 ? Math.round(count/1000) + 'k' : count.toString();
+                        const popup = '<div style="min-width:140px"><div style="font-weight:700;font-size:14px;margin-bottom:6px;">'+escapeHtml(c.kecamatan || 'Area')+'</div><div style="font-size:13px;color:#374151;">Titik: '+label+'</div></div>';
+                        marker.bindPopup(popup);
+                        // click to zoom in if cluster
+                        marker.on('click', function(){
+                            if(count > 1){ map.setView([c.lat, c.lng], Math.min(18, map.getZoom() + 2)); }
+                        });
+                    });
+                    if(resp.truncated){ showToast('Hasil dipersempit - tampil sebagian. Coba perbesar tingkat zoom atau batasi filter.', 'warning', 7000); }
+                }
             }
 
-            if(searchInput){
-                searchInput.addEventListener('input', function(e){
-                    const val = this.value.trim();
-                    clearTimeout(debounceTimer);
-                    if(val.length < 2){ suggBox.style.display = 'none'; suggBox.innerHTML = ''; return; }
-                    debounceTimer = setTimeout(function(){
-                        const kategori = document.querySelector('select[name="kategori"]')?.value || '';
-                        fetch('{{ route('preview.mobile.peta.suggest') }}?q='+encodeURIComponent(val)+'&kategori='+encodeURIComponent(kategori))
-                            .then(function(res){ return res.json(); })
-                            .then(function(json){ renderSuggestions(json.data || []); })
-                            .catch(function(){ renderSuggestions([]); });
-                    }, 300);
-                });
+            function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
 
-                document.addEventListener('click', function(ev){
-                    if(!suggBox.contains(ev.target) && ev.target !== searchInput){
-                        suggBox.style.display = 'none';
-                    }
-                });
+            async function fetchViewportData(){
+                const bounds = map.getBounds();
+                const sw = bounds.getSouthWest();
+                const ne = bounds.getNorthEast();
+                const zoom = map.getZoom();
+                const q = document.querySelector('input[name="q"]')?.value || '';
+                const kategori = document.querySelector('select[name="kategori"]')?.value || '';
+
+                const cacheKey = buildCacheKey(sw, ne, zoom, q, kategori);
+                const now = Date.now();
+                if(cache.has(cacheKey)){
+                    const entry = cache.get(cacheKey);
+                    if(now - entry.ts < CACHE_TTL){ renderResponse(entry.data); return; }
+                    cache.delete(cacheKey);
+                }
+
+                const params = new URLSearchParams({ sw_lat: sw.lat, sw_lng: sw.lng, ne_lat: ne.lat, ne_lng: ne.lng, zoom: zoom, q: q, kategori: kategori });
+                const url = '{{ route('api.umkm.clusters') }}' + '?' + params.toString();
+
+                try{
+                    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                    if(!res.ok) throw new Error('Network response not ok');
+                    const json = await res.json();
+                    cache.set(cacheKey, { ts: now, data: json });
+                    renderResponse(json);
+                } catch(err){
+                    console.error('Failed to fetch clusters', err);
+                    showToast('Gagal memuat data peta. Coba muat ulang atau periksa koneksi.', 'error', 6000);
+                }
             }
+
+            const debouncedFetch = debounce(fetchViewportData, 300);
+            map.on('moveend', debouncedFetch);
+            map.on('zoomend', debouncedFetch);
+
+            // re-fetch when filters/search applied
+            document.querySelectorAll('select[name="kategori"], input[name="q"]').forEach(el => el.addEventListener('change', debouncedFetch));
+
+            // initial load
+            fetchViewportData();
         });
     </script>
 </body>
