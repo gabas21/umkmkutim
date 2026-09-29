@@ -101,7 +101,9 @@
         .no-scrollbar {
             -ms-overflow-style: none;
             scrollbar-width: none;
-            touch-action: pan-y;
+            overflow-x: auto;
+            overflow-y: hidden;
+            touch-action: pan-x;
             scroll-snap-type: x mandatory;
             -webkit-overflow-scrolling: touch;
         }

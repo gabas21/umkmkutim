@@ -111,7 +111,14 @@
                     <div class="mt-3 space-y-3 text-sm">
                         <div class="flex justify-between gap-3 border-b border-slate-100 pb-2">
                             <span class="text-slate-500">Lokasi</span>
-                            <span class="font-semibold text-slate-800 text-right">{{ $detail['alamat'] }}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-slate-800 text-right">{{ $detail['alamat'] }}</span>
+                                @if(! empty($detail['latitude']) && ! empty($detail['longitude']))
+                                    <a href="https://www.google.com/maps/search/?api=1&query={{ $detail['latitude'] }},{{ $detail['longitude'] }}" target="_blank" rel="noopener noreferrer" class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-[12px] text-emerald-700" aria-label="Buka maps lokasi UMKM">
+                                        <i class="fa-solid fa-location-dot"></i>
+                                    </a>
+                                @endif
+                            </div>
                         </div>
                         <div class="flex justify-between gap-3 border-b border-slate-100 pb-2">
                             <span class="text-slate-500">Kecamatan</span>
@@ -132,37 +139,6 @@
                         @endforeach
                     </div>
                 </section>
-
-                @if(! empty($catalogProducts))
-                    <section class="mb-4 card-soft rounded-[24px] p-4">
-                        <div class="flex items-center justify-between gap-3">
-                            <h3 class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Katalog produk</h3>
-                            <span class="text-[10px] font-semibold text-brand-700">{{ count($catalogProducts) }} item</span>
-                        </div>
-                        <div class="mt-3 grid grid-cols-2 gap-3">
-                            @foreach($catalogProducts as $product)
-                                <button
-                                    type="button"
-                                    class="product-card overflow-hidden rounded-[20px] border border-slate-100 bg-white text-left shadow-sm"
-                                    data-name="{{ $product['name'] }}"
-                                    data-price="{{ $product['price'] }}"
-                                    data-description="{{ $product['description'] }}"
-                                    data-image="{{ $product['image'] }}"
-                                    data-badge="{{ $product['badge'] }}"
-                                >
-                                    <div class="relative h-28 overflow-hidden bg-slate-100">
-                                        <img src="{{ $product['image'] }}" alt="{{ $product['name'] }}" class="h-full w-full object-cover" onerror="this.onerror=null; this.src='{{ asset('umkm.png') }}';">
-                                        <span class="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[9px] font-bold text-brand-700 shadow-sm">{{ $product['badge'] }}</span>
-                                    </div>
-                                    <div class="p-3">
-                                        <p class="line-clamp-2 text-sm font-black leading-tight text-slate-900">{{ $product['name'] }}</p>
-                                        <p class="mt-2 text-[11px] font-semibold text-brand-700">{{ $product['price'] }}</p>
-                                    </div>
-                                </button>
-                            @endforeach
-                        </div>
-                    </section>
-                @endif
 
                 @if(! empty($detailLinks))
                     <section class="mb-4 card-soft rounded-[24px] p-4">
@@ -188,11 +164,75 @@
                     </section>
                 @endif
 
+                @if(! empty($catalogProducts))
+                    <section class="mb-4 card-soft rounded-[24px] p-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <h3 class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Katalog produk</h3>
+                            <span class="text-[10px] font-semibold text-brand-700">{{ count($catalogProducts) }} item</span>
+                        </div>
+                        <div class="mt-3 grid grid-cols-2 gap-3">
+                            @foreach($catalogProducts as $product)
+                                <div
+                                    class="product-card overflow-hidden rounded-[20px] border border-slate-100 bg-white text-left shadow-sm"
+                                    data-name="{{ $product['name'] }}"
+                                    data-price="{{ $product['price'] }}"
+                                    data-description="{{ $product['description'] }}"
+                                    data-image="{{ !empty($product['image']) ? $product['image'] : (route('placeholder.image', ['category' => $product['category'] ?? $detail['kategori']['nama'] ?? 'Produk']) . '?label=' . urlencode($product['name'])) }}"
+                                    data-badge="{{ $product['badge'] }}"
+                                    data-category="{{ $product['category'] ?? 'Produk' }}"
+                                >
+                                    <div class="relative h-28 overflow-hidden bg-slate-100">
+                                        <img src="{{ !empty($product['image']) ? $product['image'] : (route('placeholder.image', ['category' => $product['category'] ?? $detail['kategori']['nama'] ?? 'Produk']) . '?label=' . urlencode($product['name'])) }}" alt="{{ $product['name'] }}" class="h-full w-full object-cover" onerror="this.onerror=null; this.src='{{ asset('umkm.png') }}';">
+                                        <div class="absolute left-2 top-2 flex flex-wrap gap-1">
+                                            <span class="rounded-full bg-brand-600/90 px-2 py-1 text-[8px] font-bold text-white shadow-sm">{{ $product['category'] ?? 'Produk' }}</span>
+                                            <span class="rounded-full bg-white/90 px-2 py-1 text-[8px] font-bold text-brand-700 shadow-sm">{{ $product['badge'] }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="p-3">
+                                        <p class="line-clamp-2 text-sm font-black leading-tight text-slate-900">{{ $product['name'] }}</p>
+                                        <div class="mt-2 space-y-1.5">
+                                            <p class="text-[11px] font-semibold text-brand-700">{{ $product['price'] }}</p>
+                                            <div class="flex items-center justify-between gap-2 pt-1">
+                                                <p class="text-[9px] font-medium text-slate-400">Jumlah</p>
+                                                <div class="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-1.5 py-1">
+                                                    <button type="button" data-action="decrease" data-name="{{ $product['name'] }}" class="flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm font-bold text-slate-700 shadow-sm">-</button>
+                                                    <span data-qty-display="{{ $product['name'] }}" class="min-w-[18px] text-center text-[10px] font-bold text-slate-800">0</span>
+                                                    <button type="button" data-action="increase" data-name="{{ $product['name'] }}" class="flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm font-bold text-slate-700 shadow-sm">+</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
+
+                <section id="order-summary" class="mb-4 hidden card-soft rounded-[24px] p-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Keranjang</h3>
+                            <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700">Aktif</span>
+                        </div>
+                        <button id="clear-cart" type="button" class="text-[10px] font-semibold text-slate-500">Reset</button>
+                    </div>
+                    <div id="cart-items" class="mt-3 space-y-2"></div>
+                    <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                        <span class="text-xs font-semibold text-slate-500">Jumlah item</span>
+                        <span id="cart-count" class="text-sm font-black text-slate-900">0</span>
+                    </div>
+                    <div class="mt-2 flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-500">Total</span>
+                        <span id="cart-total" class="text-sm font-black text-brand-700">Rp 0</span>
+                    </div>
+                    <p class="mt-3 text-[10px] leading-relaxed text-slate-500">Catatan: keranjang akan direset bila Anda meninggalkan halaman UMKM ini.</p>
+                </section>
+
                 <div class="flex gap-2">
                     @if($whatsAppUrl)
-                        <a href="{{ $whatsAppUrl }}" target="_blank" rel="noopener noreferrer" class="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#25D366] py-3 text-sm font-bold text-white shadow-lift">
+                        <a id="whatsapp-order-btn" href="{{ $whatsAppUrl }}" target="_blank" rel="noopener noreferrer" class="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#25D366] py-3 text-sm font-bold text-white shadow-lift">
                             <i class="fa-brands fa-whatsapp text-base"></i>
-                            <span>WA</span>
+                            <span>Pesan via WA</span>
                         </a>
                     @else
                         <div class="flex flex-1 items-center justify-center gap-2 rounded-full bg-slate-300 py-3 text-sm font-bold text-white">
@@ -221,6 +261,9 @@
                             </div>
                         </div>
                         <p id="product-modal-description" class="text-sm leading-6 text-slate-600">Detail produk akan tampil di sini.</p>
+                        <div class="flex gap-2 pt-1">
+                            <button type="button" id="product-modal-add-cart" class="flex-1 rounded-full bg-brand-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20">Tambah ke keranjang</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -232,36 +275,230 @@
             const modal = document.getElementById('product-modal');
             const closeButton = document.getElementById('product-modal-close');
             const cards = document.querySelectorAll('.product-card');
-
-            if (!modal || !cards.length) {
-                return;
-            }
-
             const modalImage = document.getElementById('product-modal-image');
             const modalBadge = document.getElementById('product-modal-badge');
             const modalName = document.getElementById('product-modal-name');
             const modalPrice = document.getElementById('product-modal-price');
             const modalDescription = document.getElementById('product-modal-description');
+            const addToCartButton = document.getElementById('product-modal-add-cart');
+            const cartSummary = document.getElementById('order-summary');
+            const cartItems = document.getElementById('cart-items');
+            const cartCount = document.getElementById('cart-count');
+            const cartTotal = document.getElementById('cart-total');
+            const clearCartButton = document.getElementById('clear-cart');
+            const whatsappOrderButton = document.getElementById('whatsapp-order-btn');
+            const whatsappBaseUrl = '{{ $whatsAppUrl ?? '' }}';
+            const cart = new Map();
+            let currentProduct = null;
+
+            const parsePrice = (value) => {
+                if (!value) return 0;
+                const cleaned = String(value).replace(/[^\d]/g, '');
+                return Number(cleaned || 0);
+            };
+
+            const formatPrice = (value) => {
+                if (!value) return 'Rp 0';
+                return value.toString();
+            };
+
+            const formatCurrency = (value) => {
+                const numericValue = Number(value || 0);
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    maximumFractionDigits: 0,
+                }).format(numericValue);
+            };
+
+            const updateQtyIndicators = () => {
+                cards.forEach((card) => {
+                    const name = card.dataset.name || '';
+                    const value = cart.get(name)?.qty ?? 0;
+                    const qtyDisplay = card.querySelector('[data-qty-display]');
+
+                    if (qtyDisplay) {
+                        qtyDisplay.textContent = String(value);
+                    }
+                });
+            };
+
+            const buildWhatsAppUrl = () => {
+                if (!whatsappBaseUrl || cart.size === 0) {
+                    return whatsappBaseUrl || '#';
+                }
+
+                const items = Array.from(cart.values());
+                const message = [
+                    'Halo, saya ingin memesan produk berikut:',
+                    ...items.map((item, index) => `${index + 1}. ${item.name} (${item.qty}x - ${item.price})`),
+                    '',
+                    'Mohon konfirmasi stok dan metode pengiriman.'
+                ].join('\n');
+
+                try {
+                    const url = new URL(whatsappBaseUrl);
+                    url.searchParams.set('text', message);
+                    return url.toString();
+                } catch (error) {
+                    return `${whatsappBaseUrl}?text=${encodeURIComponent(message)}`;
+                }
+            };
+
+            const renderCart = () => {
+                const items = Array.from(cart.values());
+                const totalItems = items.reduce((sum, item) => sum + item.qty, 0);
+                const totalPrice = items.reduce((sum, item) => {
+                    const unitPrice = parsePrice(item.price);
+                    return sum + (unitPrice * item.qty);
+                }, 0);
+
+                if (!items.length) {
+                    cartSummary.classList.add('hidden');
+                    cartCount.textContent = '0';
+                    cartTotal.textContent = 'Rp 0';
+                    if (whatsappOrderButton) {
+                        whatsappOrderButton.href = whatsappBaseUrl || '#';
+                    }
+                    updateQtyIndicators();
+                    return;
+                }
+
+                cartSummary.classList.remove('hidden');
+                cartCount.textContent = String(totalItems);
+                cartTotal.textContent = formatCurrency(totalPrice);
+                cartItems.innerHTML = items.map((item) => `
+                    <div class="flex items-center justify-between gap-3 rounded-[18px] border border-slate-100 bg-slate-50 p-2.5">
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-semibold text-slate-800">${item.name}</p>
+                            <p class="text-[11px] font-semibold text-brand-700">${item.price}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" data-action="decrease" data-name="${item.name}" class="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700">-</button>
+                            <span class="w-5 text-center text-sm font-bold text-slate-800">${item.qty}</span>
+                            <button type="button" data-action="increase" data-name="${item.name}" class="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700">+</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                updateQtyIndicators();
+
+                if (whatsappOrderButton) {
+                    whatsappOrderButton.href = buildWhatsAppUrl();
+                }
+            };
 
             const closeModal = () => {
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
                 document.body.classList.remove('overflow-hidden');
+                currentProduct = null;
+            };
+
+            const changeCartItem = (name, delta) => {
+                const productCard = [...cards].find((card) => (card.dataset.name || '') === name);
+                const source = productCard ? {
+                    name: productCard.dataset.name || name,
+                    price: productCard.dataset.price || 'Rp 0',
+                    description: productCard.dataset.description || 'Detail produk belum tersedia.',
+                    image: productCard.dataset.image || '{{ asset('umkm.png') }}',
+                    badge: productCard.dataset.badge || 'Produk'
+                } : { name, price: 'Rp 0', description: 'Detail produk belum tersedia.', image: '{{ asset('umkm.png') }}', badge: 'Produk', category: 'Produk' };
+
+                const current = cart.get(name) ?? { ...source, qty: 0 };
+                const nextQty = current.qty + delta;
+
+                if (nextQty <= 0) {
+                    cart.delete(name);
+                } else {
+                    current.qty = nextQty;
+                    cart.set(name, current);
+                }
+
+                renderCart();
+            };
+
+            const addProductToCart = () => {
+                if (!currentProduct) {
+                    return;
+                }
+
+                changeCartItem(currentProduct.name, 1);
+                closeModal();
             };
 
             cards.forEach((card) => {
-                card.addEventListener('click', () => {
-                    modalImage.src = card.dataset.image || '{{ asset('umkm.png') }}';
-                    modalImage.alt = card.dataset.name || 'Produk UMKM';
-                    modalBadge.textContent = card.dataset.badge || 'Produk';
-                    modalName.textContent = card.dataset.name || 'Produk UMKM';
-                    modalPrice.textContent = card.dataset.price || 'Rp 0';
-                    modalDescription.textContent = card.dataset.description || 'Detail produk belum tersedia.';
+                card.addEventListener('click', (event) => {
+                    if (event.target.closest('[data-action]')) {
+                        return;
+                    }
+
+                    currentProduct = {
+                        name: card.dataset.name || 'Produk UMKM',
+                        price: card.dataset.price || 'Rp 0',
+                        description: card.dataset.description || 'Detail produk belum tersedia.',
+                        image: card.dataset.image || '{{ asset('umkm.png') }}',
+                        badge: card.dataset.badge || 'Produk',
+                        category: card.dataset.category || card.dataset.badge || 'Produk'
+                    };
+
+                    modalImage.src = currentProduct.image;
+                    modalImage.alt = currentProduct.name;
+                    modalBadge.textContent = currentProduct.category;
+                    modalName.textContent = currentProduct.name;
+                    modalPrice.textContent = formatPrice(currentProduct.price);
+                    modalDescription.textContent = currentProduct.description;
 
                     modal.classList.remove('hidden');
                     modal.classList.add('flex');
                     document.body.classList.add('overflow-hidden');
                 });
+            });
+
+            document.addEventListener('click', (event) => {
+                const button = event.target.closest('[data-action]');
+                if (!button) {
+                    return;
+                }
+
+                const { action, name } = button.dataset;
+                if (!name || !action) {
+                    return;
+                }
+
+                if (action === 'increase') {
+                    changeCartItem(name, 1);
+                }
+
+                if (action === 'decrease') {
+                    changeCartItem(name, -1);
+                }
+            });
+
+            addToCartButton.addEventListener('click', addProductToCart);
+            clearCartButton.addEventListener('click', () => {
+                cart.clear();
+                renderCart();
+            });
+
+            cartItems.addEventListener('click', (event) => {
+                const button = event.target.closest('button[data-action]');
+                if (!button) {
+                    return;
+                }
+
+                const { action, name } = button.dataset;
+                if (!name || !action) {
+                    return;
+                }
+
+                if (action === 'increase') {
+                    changeCartItem(name, 1);
+                }
+
+                if (action === 'decrease') {
+                    changeCartItem(name, -1);
+                }
             });
 
             closeButton.addEventListener('click', closeModal);
@@ -275,6 +512,16 @@
                     closeModal();
                 }
             });
+
+            window.addEventListener('beforeunload', (event) => {
+                if (cart.size > 0) {
+                    event.preventDefault();
+                    event.returnValue = 'Keranjang akan direset jika Anda meninggalkan halaman UMKM ini.';
+                    return event.returnValue;
+                }
+            });
+
+            renderCart();
         })();
     </script>
 </body>

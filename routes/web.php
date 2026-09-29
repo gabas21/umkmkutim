@@ -1,14 +1,15 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AdminBazarController;
 use App\Http\Controllers\AdminBazarPesertaController;
-use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AdminBeritaController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminEventController;
 use App\Http\Controllers\AdminHeroSlideController;
-use App\Http\Controllers\AdminNewsController;
 use App\Http\Controllers\AdminKategoriController;
+use App\Http\Controllers\AdminLokasiController;
+use App\Http\Controllers\AdminNewsController;
 use App\Http\Controllers\AdminPelakuUsahaController;
 use App\Http\Controllers\AdminPelatihanController;
 use App\Http\Controllers\AdminPelatihanPesertaController;
@@ -16,12 +17,12 @@ use App\Http\Controllers\AdminReviewController;
 use App\Http\Controllers\AdminSurveyController;
 use App\Http\Controllers\AdminUmkmController;
 use App\Http\Controllers\Api\KecamatanBoundaryController;
-use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Api\LokasiController as ApiLokasiController;
 use App\Http\Controllers\Api\MasterDataController;
 use App\Http\Controllers\Api\UmkmApiController;
 use App\Http\Controllers\Api\UmkmClusterController;
 use App\Http\Controllers\Api\UmkmMapController;
-use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BazarController;
 use App\Http\Controllers\BazarPesertaController;
 use App\Http\Controllers\BeritaController;
@@ -30,20 +31,21 @@ use App\Http\Controllers\EventParticipantController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\KlaimController;
 use App\Http\Controllers\NewsController;
-use App\Http\Controllers\LaporanController;
-use App\Http\Controllers\PelatihanController;
-use App\Http\Controllers\PelatihanPesertaController;
 use App\Http\Controllers\PelakuAkunController;
 use App\Http\Controllers\PelakuBazarController;
 use App\Http\Controllers\PelakuLayananController;
 use App\Http\Controllers\PelakuPelatihanController;
 use App\Http\Controllers\PelakuUsahaDashboardController;
+use App\Http\Controllers\PelatihanController;
+use App\Http\Controllers\PelatihanPesertaController;
 use App\Http\Controllers\PetaController;
-use App\Http\Controllers\AdminLokasiController;
-use App\Http\Controllers\Api\LokasiController as ApiLokasiController;
+use App\Http\Controllers\PlaceholderImageController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\SliderController;
+use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\SurveyController;
 use App\Http\Controllers\UmkmController;
+use App\Http\Controllers\UmkmMappingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -55,6 +57,9 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/preview/mobile', [HomeController::class, 'mobilePreviewHome'])->name('preview.mobile');
 Route::get('/preview/mobile/umkm', [HomeController::class, 'mobilePreviewUmkm'])->name('preview.mobile.umkm');
 Route::get('/preview/mobile/umkm/{slug}', [HomeController::class, 'mobilePreviewUmkmDetail'])->name('preview.mobile.umkm.detail');
+
+// Placeholder image generator per-category (returns an SVG)
+Route::get('/placeholder-image/{category}', [PlaceholderImageController::class, 'show'])->name('placeholder.image');
 Route::get('/preview/mobile/peta', [HomeController::class, 'mobilePreviewPeta'])->name('preview.mobile.peta');
 Route::get('/preview/mobile/peta/suggest', [HomeController::class, 'mobilePreviewPetaSuggest'])->name('preview.mobile.peta.suggest');
 Route::get('/preview/mobile/promo', [HomeController::class, 'mobilePreviewPromo'])->name('preview.mobile.promo');
@@ -112,7 +117,7 @@ Route::get('/news/{slug}', [NewsController::class, 'show'])->name('news.show');
 Route::get('/events', [EventController::class, 'index'])->name('events.index');
 Route::get('/events/{id}', [EventController::class, 'show'])->name('events.show');
 Route::post('/events/{event}/register', [EventParticipantController::class, 'store'])->name('events.register');
-Route::get('/api/sliders', [\App\Http\Controllers\SliderController::class, 'index'])->name('api.sliders');
+Route::get('/api/sliders', [SliderController::class, 'index'])->name('api.sliders');
 
 /*
 |--------------------------------------------------------------------------
@@ -297,10 +302,10 @@ Route::middleware(['auth:web', 'role:admin,superadmin'])->prefix('admin')->name(
     Route::get('/lokasi/kelurahan/import/report/{filename}', [AdminLokasiController::class, 'downloadImportReport'])->name('lokasi.kelurahan.import.report');
 
     // UMKM mapping UI: show UMKM yang kecamatan sudah ada tapi kelurahan belum, allow admin to assign
-    Route::get('/umkm/mapping', [\App\Http\Controllers\UmkmMappingController::class, 'index'])->name('umkm.mapping.index');
-    Route::post('/umkm/mapping/{id}/assign', [\App\Http\Controllers\UmkmMappingController::class, 'assign'])->name('umkm.mapping.assign');
+    Route::get('/umkm/mapping', [UmkmMappingController::class, 'index'])->name('umkm.mapping.index');
+    Route::post('/umkm/mapping/{id}/assign', [UmkmMappingController::class, 'assign'])->name('umkm.mapping.assign');
     // Create kelurahan + assign in one step (AJAX)
-    Route::post('/umkm/mapping/{id}/kelurahan-create', [\App\Http\Controllers\UmkmMappingController::class, 'storeKelurahanAndAssign'])->name('umkm.mapping.kelurahan_create');
+    Route::post('/umkm/mapping/{id}/kelurahan-create', [UmkmMappingController::class, 'storeKelurahanAndAssign'])->name('umkm.mapping.kelurahan_create');
 
     // Manajemen Pelaku Usaha
     Route::get('/pelaku-usaha', [AdminPelakuUsahaController::class, 'index'])->name('pelaku-usaha.index');
