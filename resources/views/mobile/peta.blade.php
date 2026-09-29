@@ -290,10 +290,18 @@
                     resp.data.forEach(p => {
                         if(!p.lat || !p.lng) return;
                         const marker = L.circleMarker([p.lat, p.lng], { radius: 6, color: '#16a34a', fillColor: '#34d399', fillOpacity: 0.9 }).addTo(dataLayer);
-                        const popup = '<div style="min-width:180px"><div style="font-weight:700;font-size:14px;margin-bottom:6px;">'+escapeHtml(p.nama_usaha || p.nama || 'UMKM')+'</div><div style="font-size:13px;color:#374151;">'+escapeHtml(p.kategori || '')+'<br/><a href="'+(p.url || '#')+'" style="color:#0ea5a4;">Lihat detail</a></div></div>';
-                        marker.bindPopup(popup);
-                    });
-                } else if(resp.mode === 'clusters'){
+                                        const imgSrc = p.foto_utama || '{{ asset("umkm.png") }}';
+                                        const popup = '<div style="min-width:240px;display:flex;gap:10px;align-items:flex-start">'
+                                            + '<img src="'+escapeHtml(imgSrc)+'" style="width:86px;height:86px;object-fit:cover;border-radius:8px;flex:0 0 86px;"/>'
+                                            + '<div>'
+                                                + '<div style="font-weight:700;font-size:14px;margin-bottom:6px;">'+escapeHtml(p.nama_usaha || p.nama || 'UMKM')+'</div>'
+                                                + '<div style="font-size:13px;color:#374151;">'+escapeHtml(p.kategori || '')+'<br/>'
+                                                + '<a href="'+(p.url || '#')+'" style="color:#0ea5a4;">Lihat detail</a></div>'
+                                            + '</div>'
+                                        + '</div>';
+                                        marker.bindPopup(popup);
+                                    });
+                                } else if(resp.mode === 'clusters'){
                     resp.data.forEach(c => {
                         if(!c.lat || !c.lng) return;
                         const count = c.count || 0;
