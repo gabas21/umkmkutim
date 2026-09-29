@@ -245,6 +245,10 @@
             // Layer to hold current markers / clusters
             const dataLayer = L.layerGroup().addTo(map);
 
+            // Keep map of point id -> marker for popup restoration
+            const idToMarker = new Map();
+            let lastOpenPointId = null;
+
             // Client-side cache for viewport responses (keyed by rounded bbox+zoom+filters)
             const cache = new Map();
             const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
@@ -283,8 +287,13 @@
 
             // Render clusters/points response into map
             function renderResponse(resp){
-                dataLayer.clearLayers();
-                if(!resp || !resp.data) return;
+                            // Remember currently open point id so we can re-open after re-render
+                            const preservedOpenId = lastOpenPointId;
+                            // Clear map storage
+                            dataLayer.clearLayers();
+                            idToMarker.clear();
+                            lastOpenPointId = null;
+                            if(!resp || !resp.data) return;
 
                 if(resp.mode === 'points'){
                     resp.data.forEach(p => {
@@ -298,7 +307,16 @@
                             + '<div><a href="'+(p.url || '#')+'" style="display:inline-block;padding:8px 12px;background:#10b981;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Lihat detail</a></div>'
                         + '</div>';
                         marker.bindPopup(popup);
-                                    });
+                        // track popup open/close so we can restore after re-render
+                        try{ marker.on('popupopen', function(){ lastOpenPointId = p.id; }); marker.on('popupclose', function(){ if(lastOpenPointId === p.id) lastOpenPointId = null; }); } catch(e){}
+                        idToMarker.set(p.id, marker);
+                    });
+
+                    // Restore previously open popup if present
+                    if(preservedOpenId){
+                        const found = idToMarker.get(preservedOpenId);
+                        if(found) { found.openPopup(); }
+                    }
                                 } else if(resp.mode === 'clusters'){
                     resp.data.forEach(c => {
                         if(!c.lat || !c.lng) return;
