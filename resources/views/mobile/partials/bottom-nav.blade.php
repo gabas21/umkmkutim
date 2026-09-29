@@ -11,7 +11,7 @@
     <div class="flex justify-center">
         <div class="inline-grid w-fit max-w-full grid-cols-4 gap-2 rounded-[24px] bg-white px-2 py-1.5 shadow-[0_12px_30px_rgba(15,23,42,0.12)]">
             <a id="bottom-home-link" href="{{ route('preview.mobile') }}" tabindex="0" class="flex min-w-[52px] flex-col items-center justify-center rounded-[14px] px-1 py-1.5 text-[9px] {{ request()->routeIs('preview.mobile') ? 'font-bold text-slate-800' : 'font-medium text-slate-500' }}">
-                <span id="bottom-home-circle" tabindex="0" class="mb-1 flex h-8 w-8 items-center justify-center rounded-full {{ request()->routeIs('preview.mobile') ? 'bg-emerald-100 text-emerald-700' : 'bg-transparent text-slate-500' }}">
+                <span id="bottom-home-circle" tabindex="0" class="mb-1 flex h-8 w-8 items-center justify-center rounded-full {{ request()->routeIs('preview.mobile') ? 'bg-emerald-100 text-emerald-700' : 'bg-transparent text-slate-500' }} {{ request()->routeIs('home') ? 'focused-home' : '' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/></svg>
                 </span>
                 <span>Home</span>
