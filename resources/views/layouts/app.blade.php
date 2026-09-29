@@ -419,8 +419,10 @@
     (function(){
         try{
             document.addEventListener('DOMContentLoaded', function(){
+                console.log('[first-open] script start');
                 const flag = localStorage.getItem('umkm_first_open_done');
-                if(flag === '1') return;
+                console.log('[first-open] flag=', flag);
+                if(flag === '1') { console.log('[first-open] already done -> exit'); return; }
 
                 function isVisible(el){
                     if(!el) return false;
@@ -434,14 +436,18 @@
                 const topHome = document.getElementById('top-home-link');
                 const siteLogo = document.getElementById('site-logo-link');
 
+                console.log('[first-open] elements', { bottomHome: !!bottomHome, topHome: !!topHome, siteLogo: !!siteLogo });
+
                 let targetLink = null;
                 if(isVisible(bottomHome)) targetLink = bottomHome;
                 else if(isVisible(topHome)) targetLink = topHome;
                 else if(isVisible(siteLogo)) targetLink = siteLogo;
-                if(!targetLink) return;
+                if(!targetLink) { console.log('[first-open] no visible target found'); return; }
+
+                console.log('[first-open] chosen target', targetLink.id || targetLink.tagName);
 
                 // Apply focus and a visible highlight (use inline styles when utility classes may be purged)
-                try{ targetLink.focus({ preventScroll: true }); }catch(e){ /* ignore */ }
+                try{ targetLink.focus({ preventScroll: true }); console.log('[first-open] focus called'); }catch(e){ console.warn('[first-open] focus failed', e); }
 
                 const circle = document.getElementById('bottom-home-circle');
                 if(circle && isVisible(circle)){
@@ -460,7 +466,7 @@
 
                 localStorage.setItem('umkm_first_open_done','1');
             });
-        }catch(e){ /* ignore */ }
+        }catch(e){ console.error('[first-open] unexpected', e); }
     })();
 
     // Force highlight top-home-link specifically on home route in case bottom nav isn't present on some setups
