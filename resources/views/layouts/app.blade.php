@@ -462,6 +462,23 @@
             });
         }catch(e){ /* ignore */ }
     })();
+
+    // Force highlight top-home-link specifically on home route in case bottom nav isn't present on some setups
+    @if(request()->routeIs('home'))
+    document.addEventListener('DOMContentLoaded', function(){
+        try{
+            if(localStorage.getItem('umkm_first_open_done') === '1') return;
+            const topHome = document.getElementById('top-home-link');
+            if(!topHome) return;
+            try{ topHome.focus({ preventScroll: true }); }catch(e){}
+            const prevOutline = topHome.style.outline || '';
+            const prevBox = topHome.style.boxShadow || '';
+            topHome.style.outline = '3px solid rgba(16,185,129,0.28)';
+            topHome.style.boxShadow = '0 10px 28px rgba(16,185,129,0.12)';
+            setTimeout(()=>{ topHome.style.outline = prevOutline; topHome.style.boxShadow = prevBox; localStorage.setItem('umkm_first_open_done','1'); }, 2500);
+        }catch(e){/*ignore*/}
+    });
+    @endif
 </script>
 </body>
 </html>
