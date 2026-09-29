@@ -298,14 +298,16 @@
                         if(!c.lat || !c.lng) return;
                         const count = c.count || 0;
                         const radius = Math.min(40, 8 + Math.log10(Math.max(1, count)) * 8);
-                        const marker = L.circleMarker([c.lat, c.lng], { radius: radius, color: '#0ea5a4', weight: 2, fillColor: '#34d399', fillOpacity: 0.85 }).addTo(dataLayer);
                         const label = count >= 1000 ? Math.round(count/1000) + 'k' : count.toString();
+                        const size = Math.round(Math.min(80, Math.max(24, radius * 2)));
+                        const fontSize = Math.max(10, Math.round(size / 3));
+                        const html = '<div style="display:flex;align-items:center;justify-content:center;width:'+size+'px;height:'+size+'px;border-radius:50%;background:#10b981;color:#fff;font-weight:700;border:2px solid rgba(255,255,255,0.85);box-shadow:0 6px 14px rgba(16,185,129,0.25);font-size:'+fontSize+'px;">'+label+'</div>';
+                        const icon = L.divIcon({ html: html, className: 'cluster-div-icon', iconSize: [size, size], iconAnchor: [Math.round(size/2), Math.round(size/2)] });
+                        const marker = L.marker([c.lat, c.lng], { icon }).addTo(dataLayer);
                         const popup = '<div style="min-width:140px"><div style="font-weight:700;font-size:14px;margin-bottom:6px;">'+escapeHtml(c.kecamatan || 'Area')+'</div><div style="font-size:13px;color:#374151;">Titik: '+label+'</div></div>';
                         marker.bindPopup(popup);
                         // click to zoom in if cluster
-                        marker.on('click', function(){
-                            if(count > 1){ map.setView([c.lat, c.lng], Math.min(18, map.getZoom() + 2)); }
-                        });
+                        marker.on('click', function(){ if(count > 1){ map.setView([c.lat, c.lng], Math.min(18, map.getZoom() + 2)); } });
                     });
                     if(resp.truncated){ showToast('Hasil dipersempit - tampil sebagian. Coba perbesar tingkat zoom atau batasi filter.', 'warning', 7000); }
                 }
