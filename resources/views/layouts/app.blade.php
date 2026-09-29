@@ -449,12 +449,14 @@
                 // Apply focus and a visible highlight (use inline styles when utility classes may be purged)
                 try{ targetLink.focus({ preventScroll: true }); console.log('[first-open] focus called'); }catch(e){ console.warn('[first-open] focus failed', e); }
 
-                const circle = document.getElementById('bottom-home-circle');
+                    const circle = document.getElementById('bottom-home-circle');
                 if(circle && isVisible(circle)){
                     // prefer visible bottom circle effect
                     circle.classList.add('ring-2', 'ring-emerald-400');
-                    circle.style.transform = 'scale(1.06)';
-                    setTimeout(()=>{ circle.classList.remove('ring-2','ring-emerald-400'); circle.style.transform = ''; }, 2500);
+                    circle.classList.add('focused-home');
+                    // ensure focus as well
+                    try{ circle.focus(); }catch(e){}
+                    setTimeout(()=>{ circle.classList.remove('ring-2','ring-emerald-400'); circle.classList.remove('focused-home'); }, 2500);
                 } else {
                     // fallback: apply temporary inline outline and shadow so it shows on mobile
                     const prevOutline = targetLink.style.outline || '';

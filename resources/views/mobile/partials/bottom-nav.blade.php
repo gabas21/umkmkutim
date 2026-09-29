@@ -1,4 +1,13 @@
 <nav class="fixed inset-x-0 bottom-0 z-40 w-full px-1.5 pb-2 pt-1.5">
+    <style>
+        /* Focus helper for Home circle — use !important so it shows in devtools mobile emulation */
+        .focused-home {
+            box-shadow: 0 12px 30px rgba(16,185,129,0.20) !important;
+            outline: 3px solid rgba(16,185,129,0.24) !important;
+            transform: scale(1.08) !important;
+            transition: transform 180ms ease, box-shadow 180ms ease, outline 180ms ease;
+        }
+    </style>
     <div class="flex justify-center">
         <div class="inline-grid w-fit max-w-full grid-cols-4 gap-2 rounded-[24px] bg-white px-2 py-1.5 shadow-[0_12px_30px_rgba(15,23,42,0.12)]">
             <a id="bottom-home-link" href="{{ route('preview.mobile') }}" tabindex="0" class="flex min-w-[52px] flex-col items-center justify-center rounded-[14px] px-1 py-1.5 text-[9px] {{ request()->routeIs('preview.mobile') ? 'font-bold text-slate-800' : 'font-medium text-slate-500' }}">
