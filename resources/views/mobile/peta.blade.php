@@ -242,8 +242,12 @@
             locateBtn.addTo(map);
             map.on('locationerror', function(){ if(window.alert) alert('Tidak dapat menentukan lokasi Anda'); });
 
-            // Layer to hold current markers / clusters
+            // Layer to hold current clusters (server-side clusters)
             const dataLayer = L.layerGroup().addTo(map);
+
+            // Client-side marker cluster group for many individual points (improves mobile performance)
+            let markerClusterGroup = L.markerClusterGroup({ chunkedLoading: true, chunkInterval: 200, chunkDelay: 50 });
+            map.addLayer(markerClusterGroup);
 
             // Keep map of point id -> marker for popup restoration
             const idToMarker = new Map();
@@ -296,27 +300,38 @@
                             if(!resp || !resp.data) return;
 
                 if(resp.mode === 'points'){
-                    resp.data.forEach(p => {
-                        if(!p.lat || !p.lng) return;
-                        const marker = L.circleMarker([p.lat, p.lng], { radius: 6, color: '#16a34a', fillColor: '#34d399', fillOpacity: 0.9 }).addTo(dataLayer);
-                        const imgSrc = p.foto_utama || '{{ asset("umkm.png") }}';
-                        const popup = '<div style="min-width:220px;text-align:center;padding:6px 8px">'
-                            + '<img src="'+escapeHtml(imgSrc)+'" style="width:100%;max-width:260px;height:140px;object-fit:cover;border-radius:10px;margin-bottom:8px;"/>'
-                            + '<div style="font-weight:700;font-size:15px;margin-bottom:6px;color:#111827;">'+escapeHtml(p.nama_usaha || p.nama || 'UMKM')+'</div>'
-                            + '<div style="font-size:13px;color:#374151;margin-bottom:10px;">'+escapeHtml(p.kategori || '')+'</div>'
-                            + '<div><a href="'+(p.url || '#')+'" style="display:inline-block;padding:8px 12px;background:#10b981;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Lihat detail</a></div>'
-                        + '</div>';
-                        marker.bindPopup(popup);
-                        // track popup open/close so we can restore after re-render
-                        try{ marker.on('popupopen', function(){ lastOpenPointId = p.id; }); marker.on('popupclose', function(){ if(lastOpenPointId === p.id) lastOpenPointId = null; }); } catch(e){}
-                        idToMarker.set(p.id, marker);
-                    });
+                                    // For large number of points, use client-side clustering (leaflet.markercluster) and chunked loading
+                                    markerClusterGroup.clearLayers();
 
-                    // Restore previously open popup if present
-                    if(preservedOpenId){
-                        const found = idToMarker.get(preservedOpenId);
-                        if(found) { found.openPopup(); }
-                    }
+                                    const MAX_CLIENT_POINTS = 1500; // cap to avoid freezing low-end devices
+                                    let points = resp.data || [];
+                                    if(points.length > MAX_CLIENT_POINTS){
+                                        showToast('Menampilkan sebagian titik untuk performa. Perbesar zoom untuk melihat lebih banyak.', 'warning', 6000);
+                                        points = points.slice(0, MAX_CLIENT_POINTS);
+                                    }
+
+                                    points.forEach(p => {
+                                        if(!p.lat || !p.lng) return;
+                                        const m = L.marker([p.lat, p.lng], { title: p.nama_usaha || p.nama || 'UMKM' });
+                                        const imgSrc = p.foto_utama || '{{ asset("umkm.png") }}';
+                                        const popup = '<div style="min-width:220px;text-align:center;padding:6px 8px">'
+                                            + '<img src="'+escapeHtml(imgSrc)+'" style="width:100%;max-width:260px;height:140px;object-fit:cover;border-radius:10px;margin-bottom:8px;" loading="lazy"/>'
+                                            + '<div style="font-weight:700;font-size:15px;margin-bottom:6px;color:#111827;">'+escapeHtml(p.nama_usaha || p.nama || 'UMKM')+'</div>'
+                                            + '<div style="font-size:13px;color:#374151;margin-bottom:10px;">'+escapeHtml(p.kategori || '')+'</div>'
+                                            + '<div><a href="'+(p.url || '#')+'" style="display:inline-block;padding:8px 12px;background:#10b981;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;">Lihat detail</a></div>'
+                                        + '</div>';
+                                        m.bindPopup(popup);
+                                        try{ m.on('popupopen', function(){ lastOpenPointId = p.id; }); m.on('popupclose', function(){ if(lastOpenPointId === p.id) lastOpenPointId = null; }); } catch(e){}
+                                        idToMarker.set(p.id, m);
+                                        markerClusterGroup.addLayer(m);
+                                    });
+
+                                    // Restore previously open popup if present
+                                    if(preservedOpenId){
+                                        const found = idToMarker.get(preservedOpenId);
+                                        if(found) { found.openPopup(); }
+                                    }
+
                                 } else if(resp.mode === 'clusters'){
                     resp.data.forEach(c => {
                         if(!c.lat || !c.lng) return;
