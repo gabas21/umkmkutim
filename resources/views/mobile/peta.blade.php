@@ -106,9 +106,9 @@
                     </div>
 
                     <!-- Expanded map surface: near full-viewport for Google Maps-like experience -->
-                    <div class="map-surface relative p-0 bg-gradient-to-br from-emerald-50 via-lime-50 to-emerald-100" style="height: calc(100vh - 140px);">
+                    <div class="map-surface relative p-0 bg-white" style="height: calc(100vh - 140px);">
                         <!-- Leaflet map container (fills this area) -->
-                        <div id="leaflet-map" style="height:100%; width:100%;"></div>
+                        <div id="leaflet-map" style="height:100%; width:100%; background-color: #f0f0f0;"></div>
                     </div>
 
                     <!-- Footer summary removed to present map-only larger view on mobile -->
@@ -144,38 +144,16 @@
             const _mapboxStyle = '{{ config("map.mapbox_style", "mapbox/streets-v11") }}';
 
             let tileLayer;
-            let fallbackApplied = false;
-
-            // small on-screen debug panel for mobile (temporary)
-            const debugPanel = document.createElement('div');
-            debugPanel.id = 'map-debug';
-            debugPanel.style.position = 'fixed';
-            debugPanel.style.right = '12px';
-            debugPanel.style.top = '12px';
-            debugPanel.style.zIndex = 99999;
-            debugPanel.style.background = 'rgba(0,0,0,0.65)';
-            debugPanel.style.color = '#fff';
-            debugPanel.style.padding = '8px 10px';
-            debugPanel.style.borderRadius = '8px';
-            debugPanel.style.fontSize = '12px';
-            debugPanel.style.fontFamily = 'sans-serif';
-            debugPanel.style.display = 'none';
-            document.body.appendChild(debugPanel);
 
             function debug(msg){
-                try{
-                    console.log('[MAP-DEBUG]', msg);
-                    debugPanel.textContent = String(msg);
-                    debugPanel.style.display = 'block';
-                    clearTimeout(debug._t);
-                    debug._t = setTimeout(function(){ debugPanel.style.display = 'none'; }, 8000);
-                } catch(e){ console.log('[MAP-DEBUG-ERR]', e); }
+                console.log('[MAP-DEBUG]', msg);
             }
 
             // helper to create OSM default
             function createOsmLayer(){
-                return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap contributors'
+                return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors',
+                    maxZoom: 19
                 });
             }
 
@@ -199,8 +177,13 @@
                 tileLayer = createOsmLayer().addTo(map);
             }
 
-            // Fallback tile URL (Stamen Terrain) if primary tiles fail or rate-limited
-            const fallbackTileUrl = 'https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg';
+            // Fallback tile URLs - try multiple providers if primary fails
+            const fallbackTileUrls = [
+                { url: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png', attr: '&copy; OpenStreetMap DE' },
+                { url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', attr: '&copy; OpenTopoMap' }
+            ];
+            let fallbackIndex = 0;
+            let fallbackApplied = false;
 
             // Basic tile error handler: switch once to fallback and notify user
             if(tileLayer && tileLayer.on){
@@ -216,12 +199,15 @@
                     tileErrorCount++;
                     console.warn('Tile error', err);
                     debug('Tile error #'+tileErrorCount);
-                    if(!fallbackApplied){
+                    if(!fallbackApplied && tileErrorCount >= 3){
                         try { map.removeLayer(tileLayer); } catch(e){}
-                        tileLayer = L.tileLayer(fallbackTileUrl, { attribution: 'Map tiles by Stamen, CC BY 3.0 — Map data © OpenStreetMap contributors' }).addTo(map);
-                        fallbackApplied = true;
-                        debug('Using fallback tiles');
-                        showToast('Peta utama bermasalah — menggunakan fallback tiles. Jika sering terjadi, pertimbangkan menggunakan provider berbayar (Mapbox/Maptiler).', 'warning');
+                        if(fallbackIndex < fallbackTileUrls.length){
+                            const fallback = fallbackTileUrls[fallbackIndex++];
+                            tileLayer = L.tileLayer(fallback.url, { attribution: fallback.attr + ' | © OpenStreetMap contributors', maxZoom: 19 }).addTo(map);
+                            fallbackApplied = true;
+                            debug('Switching to fallback tile provider: ' + fallbackIndex);
+                            showToast('Peta loading... menggunakan provider alternatif', 'success');
+                        }
                     }
                 });
             } else {

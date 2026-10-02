@@ -1,5 +1,12 @@
 <?php
 
+$tileProvider = env('MAP_TILE_PROVIDER', 'osm');
+$tileKey = env('MAP_TILE_KEY', '');
+
+if (($tileProvider === 'mapbox' || $tileProvider === 'maptiler') && empty($tileKey)) {
+    $tileProvider = 'osm';
+}
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -13,8 +20,8 @@ return [
     |
     */
 
-    'provider' => env('MAP_TILE_PROVIDER', 'osm'),
-    'key' => env('MAP_TILE_KEY', ''),
+    'provider' => $tileProvider,
+    'key' => $tileKey,
     'style' => env('MAP_TILE_STYLE', 'streets'),
     'mapbox_style' => env('MAPBOX_STYLE', 'mapbox/streets-v11'),
 ];
