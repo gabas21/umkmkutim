@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Umkm;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class UmkmApiController extends Controller
@@ -16,7 +15,7 @@ class UmkmApiController extends Controller
         $query = Umkm::with(['kategori', 'kecamatan', 'kelurahan'])->orderByDesc('id');
 
         if ($request->filled('search')) {
-            $term = '%' . $request->search . '%';
+            $term = '%'.$request->search.'%';
             $query->where(function ($q) use ($term) {
                 $q->where('nama_usaha', 'like', $term)
                     ->orWhere('alamat', 'like', $term)
@@ -57,7 +56,7 @@ class UmkmApiController extends Controller
             ->orderByDesc('id');
 
         if ($request->filled('search')) {
-            $query->where('nama_usaha', 'like', '%' . $request->search . '%');
+            $query->where('nama_usaha', 'like', '%'.$request->search.'%');
         }
 
         if ($request->filled('kecamatan_id')) {
@@ -80,7 +79,7 @@ class UmkmApiController extends Controller
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
-                $term = '%' . $request->search . '%';
+                $term = '%'.$request->search.'%';
                 $q->where('nama_usaha', 'like', $term)
                     ->orWhere('alamat', 'like', $term)
                     ->orWhere('email', 'like', $term);
@@ -124,7 +123,7 @@ class UmkmApiController extends Controller
 
         $slug = Str::slug($validated['nama_usaha']);
         if (Umkm::where('slug', $slug)->exists()) {
-            $slug .= '-' . now()->format('YmdHis');
+            $slug .= '-'.now()->format('YmdHis');
         }
 
         $umkm = Umkm::create([
@@ -140,7 +139,7 @@ class UmkmApiController extends Controller
             'status' => $validated['status'] ?? 'active',
             'status_klaim' => $validated['status_klaim'] ?? 'belum_diklaim',
             'location' => $validated['latitude'] !== null && $validated['longitude'] !== null
-                ? DB::raw("ST_GeomFromText('POINT({$validated['longitude']} {$validated['latitude']})', 4326)")
+                ? Umkm::makePoint($validated['latitude'], $validated['longitude'])
                 : null,
         ]);
 
@@ -177,7 +176,7 @@ class UmkmApiController extends Controller
         }
 
         if (isset($validated['latitude'], $validated['longitude'])) {
-            $validated['location'] = DB::raw("ST_GeomFromText('POINT({$validated['longitude']} {$validated['latitude']})', 4326)");
+            $validated['location'] = Umkm::makePoint($validated['latitude'], $validated['longitude']);
         }
 
         $umkm->fill($validated);
@@ -219,7 +218,7 @@ class UmkmApiController extends Controller
         ActivityLog::record(
             'umkm',
             'verify',
-            "Memutuskan status klaim UMKM '{$umkm->nama_usaha}' menjadi {$validated['status']} dengan catatan: " . ($validated['catatan'] ?? 'tidak ada catatan'),
+            "Memutuskan status klaim UMKM '{$umkm->nama_usaha}' menjadi {$validated['status']} dengan catatan: ".($validated['catatan'] ?? 'tidak ada catatan'),
             auth()->id()
         );
 

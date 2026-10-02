@@ -134,6 +134,10 @@
                 const first = nearby.find(i => i.latitude && i.longitude) || nearby[0];
                 center = [parseFloat(first.latitude || first.lat || 0), parseFloat(first.longitude || first.lng || 0)];
             }
+            // fall back to Kutai Timur when coordinates are missing or invalid
+            if(!isFinite(center[0]) || !isFinite(center[1]) || Math.abs(center[0]) > 90 || (center[0] === 0 && center[1] === 0)){
+                center = [0.55, 117.55];
+            }
 
             const map = L.map('leaflet-map', { zoomControl: false }).setView(center, nearby.length ? 13 : 6);
 
@@ -153,7 +157,9 @@
             function createOsmLayer(){
                 return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '&copy; OpenStreetMap contributors',
-                    maxZoom: 19
+                    maxZoom: 19,
+                    // OSM blocks tile requests without a Referer; server sends Referrer-Policy: same-origin
+                    referrerPolicy: 'strict-origin-when-cross-origin'
                 });
             }
 
@@ -203,7 +209,7 @@
                         try { map.removeLayer(tileLayer); } catch(e){}
                         if(fallbackIndex < fallbackTileUrls.length){
                             const fallback = fallbackTileUrls[fallbackIndex++];
-                            tileLayer = L.tileLayer(fallback.url, { attribution: fallback.attr + ' | © OpenStreetMap contributors', maxZoom: 19 }).addTo(map);
+                            tileLayer = L.tileLayer(fallback.url, { attribution: fallback.attr + ' | © OpenStreetMap contributors', maxZoom: 19, referrerPolicy: 'strict-origin-when-cross-origin' }).addTo(map);
                             fallbackApplied = true;
                             debug('Switching to fallback tile provider: ' + fallbackIndex);
                             showToast('Peta loading... menggunakan provider alternatif', 'success');

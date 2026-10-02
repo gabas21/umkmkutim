@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Facades\DB;
 
 class Umkm extends Model
@@ -130,45 +131,85 @@ class Umkm extends Model
     {
         $latitudeExpression = static::latitudeExpression();
         $longitudeExpression = static::longitudeExpression();
-        $pointWkt = sprintf('POINT(%s %s)', $lng, $lat);
+        $pointExpression = static::geomFromTextExpression();
+        $pointWkt = static::pointWkt($lat, $lng);
 
         return $query->selectRaw(
-            "umkm.*, {$latitudeExpression} as latitude, {$longitudeExpression} as longitude, ST_Distance_Sphere(location, ST_GeomFromText(?, 4326)) AS jarak_meter",
+            "umkm.*, {$latitudeExpression} as latitude, {$longitudeExpression} as longitude, ST_Distance_Sphere(location, {$pointExpression}) AS jarak_meter",
             [$pointWkt]
         )
-            ->whereRaw('ST_Distance_Sphere(location, ST_GeomFromText(?, 4326)) <= ?', [$pointWkt, $maxMeters])
+            ->whereRaw("ST_Distance_Sphere(location, {$pointExpression}) <= ?", [$pointWkt, $maxMeters])
             ->orderBy('jarak_meter');
     }
 
     public function scopeKecamatan($query, $kecamatan)
     {
-        if (!empty($kecamatan)) {
+        if (! empty($kecamatan)) {
             return $query->where('kecamatan', $kecamatan);
         }
+
         return $query;
     }
 
     public function scopeKategoriFilter($query, $kategoriId)
     {
-        if (!empty($kategoriId)) {
+        if (! empty($kategoriId)) {
             return $query->where('kategori_id', $kategoriId);
         }
+
         return $query;
     }
 
-    // Helper static method for Point geometry
-    public static function makePoint($lat, $lng)
+    /**
+     * Build a SRID 4326 point expression for storing in the `location` column.
+     */
+    public static function makePoint(float|string $lat, float|string $lng): Expression
     {
-        return DB::raw("ST_GeomFromText('POINT({$lng} {$lat})', 4326)");
+        return DB::raw(static::geomFromTextExpression("'".static::pointWkt($lat, $lng)."'"));
+    }
+
+    /**
+     * WKT for a point, always written as "POINT(lng lat)".
+     */
+    public static function pointWkt(float|string $lat, float|string $lng): string
+    {
+        return sprintf('POINT(%.8F %.8F)', (float) $lng, (float) $lat);
+    }
+
+    /**
+     * ST_GeomFromText() for SRID 4326 that reads WKT as "lng lat" on every database.
+     *
+     * @param  string  $wkt  SQL fragment producing the WKT (a "?" binding by default)
+     */
+    public static function geomFromTextExpression(string $wkt = '?'): string
+    {
+        return static::usesGeographicAxisOrder()
+            ? "ST_GeomFromText({$wkt}, 4326, 'axis-order=long-lat')"
+            : "ST_GeomFromText({$wkt}, 4326)";
     }
 
     public static function latitudeExpression(string $column = 'location'): string
     {
-        return "ST_Y({$column})";
+        return static::usesGeographicAxisOrder() ? "ST_Latitude({$column})" : "ST_Y({$column})";
     }
 
     public static function longitudeExpression(string $column = 'location'): string
     {
-        return "ST_X({$column})";
+        return static::usesGeographicAxisOrder() ? "ST_Longitude({$column})" : "ST_X({$column})";
+    }
+
+    /**
+     * MySQL 8+ treats SRID 4326 points as latitude-first, so ST_X/ST_Y are swapped
+     * compared to MariaDB / MySQL 5.7.
+     */
+    protected static function usesGeographicAxisOrder(): bool
+    {
+        $connection = DB::connection();
+
+        if ($connection->getDriverName() !== 'mysql' || $connection->isMaria()) {
+            return false;
+        }
+
+        return version_compare($connection->getServerVersion(), '8.0.0', '>=');
     }
 }

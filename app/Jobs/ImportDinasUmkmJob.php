@@ -9,7 +9,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ImportDinasUmkmJob implements ShouldQueue
@@ -36,7 +35,7 @@ class ImportDinasUmkmJob implements ShouldQueue
             'Rantau Pulung', 'Muara Wahau', 'Kongbeng', 'Muara Bengkal',
             'Muara Ancalong', 'Busang', 'Telen', 'Sandaran',
             'Sangkulirang', 'Kaliorang', 'Kaubun', 'Karangan',
-            'Batu Ampar', 'Long Mesangat'
+            'Batu Ampar', 'Long Mesangat',
         ];
 
         foreach ($this->rows as $row) {
@@ -66,15 +65,15 @@ class ImportDinasUmkmJob implements ShouldQueue
             }
 
             // Koordinat default (area Kutai Timur/Sangatta jika kosong)
-            $lat = !empty($row['latitude']) ? (float)$row['latitude'] : (0.49 + (mt_rand(-500, 500) / 10000));
-            $lng = !empty($row['longitude']) ? (float)$row['longitude'] : (117.54 + (mt_rand(-500, 500) / 10000));
+            $lat = ! empty($row['latitude']) ? (float) $row['latitude'] : (0.49 + (mt_rand(-500, 500) / 10000));
+            $lng = ! empty($row['longitude']) ? (float) $row['longitude'] : (117.54 + (mt_rand(-500, 500) / 10000));
 
             // Generate slug unik
             $baseSlug = Str::slug($namaUsaha);
             $slug = $baseSlug;
             $counter = 1;
             while (Umkm::where('slug', $slug)->exists()) {
-                $slug = $baseSlug . '-' . $counter;
+                $slug = $baseSlug.'-'.$counter;
                 $counter++;
             }
 
@@ -86,14 +85,14 @@ class ImportDinasUmkmJob implements ShouldQueue
                 'alamat' => $row['alamat'] ?? "Jl. Poros {$matchedKecamatan}, Kutai Timur",
                 'kecamatan' => $matchedKecamatan,
                 'kelurahan_desa' => $row['kelurahan_desa'] ?? null,
-                'location' => DB::raw("ST_GeomFromText('POINT({$lng} {$lat})', 4326)"),
+                'location' => Umkm::makePoint($lat, $lng),
                 'telepon' => $row['telepon'] ?? null,
                 'email' => $row['email'] ?? null,
                 'instagram' => $row['instagram'] ?? null,
                 'website' => $row['website'] ?? null,
                 'foto_utama' => $row['foto_utama'] ?? null,
-                'rating' => isset($row['rating']) ? (float)$row['rating'] : 4.5,
-                'jumlah_review' => isset($row['jumlah_review']) ? (int)$row['jumlah_review'] : 0,
+                'rating' => isset($row['rating']) ? (float) $row['rating'] : 4.5,
+                'jumlah_review' => isset($row['jumlah_review']) ? (int) $row['jumlah_review'] : 0,
                 'jumlah_dilihat' => 0,
                 'sumber_data' => 'import',
                 'status_klaim' => 'belum_diklaim',

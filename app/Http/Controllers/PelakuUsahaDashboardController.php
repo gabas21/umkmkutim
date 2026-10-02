@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kategori;
+use App\Models\Kecamatan;
+use App\Models\Kelurahan;
 use App\Models\KlaimUsaha;
 use App\Models\LaporanKunjungan;
 use App\Models\Umkm;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class PelakuUsahaDashboardController extends Controller
 {
@@ -55,19 +55,19 @@ class PelakuUsahaDashboardController extends Controller
             ->where('status', 'disetujui')
             ->exists();
 
-        if (!$hasApprovedClaim) {
+        if (! $hasApprovedClaim) {
             return redirect()->route('dashboard.pelaku')->with('error', 'Anda belum memiliki izin mengelola data UMKM ini.');
         }
 
         $umkm = Umkm::withCoordinates()->findOrFail($id);
         $kategoriList = Kategori::all();
         // Use master kecamatan table for dropdown
-        $daftarKecamatan = \App\Models\Kecamatan::select('id', 'name')->orderBy('name')->get();
+        $daftarKecamatan = Kecamatan::select('id', 'name')->orderBy('name')->get();
 
         // Prepare initial kelurahan list if umkm has kecamatan_id
         $initialKelurahan = [];
-        if (!empty($umkm->kecamatan_id)) {
-            $initialKelurahan = \App\Models\Kelurahan::where('kecamatan_id', $umkm->kecamatan_id)->select('id', 'name')->orderBy('name')->get();
+        if (! empty($umkm->kecamatan_id)) {
+            $initialKelurahan = Kelurahan::where('kecamatan_id', $umkm->kecamatan_id)->select('id', 'name')->orderBy('name')->get();
         }
 
         return view('dashboard.pelaku.edit-umkm', compact('umkm', 'kategoriList', 'daftarKecamatan', 'initialKelurahan'));
@@ -82,7 +82,7 @@ class PelakuUsahaDashboardController extends Controller
             ->where('status', 'disetujui')
             ->exists();
 
-        if (!$hasApprovedClaim) {
+        if (! $hasApprovedClaim) {
             abort(403);
         }
 
@@ -109,18 +109,18 @@ class PelakuUsahaDashboardController extends Controller
             $validated['foto_utama'] = $request->file('foto_utama')->store('umkm/foto', 'public');
         }
 
-        $lat = (float)$validated['latitude'];
-        $lng = (float)$validated['longitude'];
+        $lat = (float) $validated['latitude'];
+        $lng = (float) $validated['longitude'];
         unset($validated['latitude'], $validated['longitude']);
 
         // Map master ids to string fields for backward compatibility
         if (isset($validated['kecamatan_id']) && $validated['kecamatan_id']) {
-            $kec = \App\Models\Kecamatan::find($validated['kecamatan_id']);
+            $kec = Kecamatan::find($validated['kecamatan_id']);
             $validated['kecamatan'] = $kec ? $kec->name : $umkm->kecamatan;
         }
 
         if (isset($validated['kelurahan_id']) && $validated['kelurahan_id']) {
-            $kel = \App\Models\Kelurahan::find($validated['kelurahan_id']);
+            $kel = Kelurahan::find($validated['kelurahan_id']);
             $validated['kelurahan_desa'] = $kel ? $kel->name : ($validated['kelurahan_desa'] ?? $umkm->kelurahan_desa);
         }
 
@@ -133,7 +133,7 @@ class PelakuUsahaDashboardController extends Controller
             $umkm->kelurahan_id = $validated['kelurahan_id'];
         }
 
-        $umkm->location = DB::raw("ST_GeomFromText('POINT({$lng} {$lat})', 4326)");
+        $umkm->location = Umkm::makePoint($lat, $lng);
         $umkm->save();
 
         return redirect()->route('dashboard.pelaku')->with('success', 'Data profil usaha berhasil diperbarui!');

@@ -752,15 +752,15 @@ class HomeController extends Controller
 
             if ($selectedRadius > 0 && $defaultLat !== 0 && $defaultLng !== 0) {
                 $radiusMeters = $selectedRadius * 1000;
-                $pointWkt = sprintf('POINT(%s %s)', $defaultLng, $defaultLat);
+                $pointWkt = Umkm::pointWkt($defaultLat, $defaultLng);
 
-                $query->whereRaw('ST_Distance_Sphere(location, ST_GeomFromText(?, 4326)) <= ?', [$pointWkt, $radiusMeters]);
+                $query->whereRaw('ST_Distance_Sphere(location, '.Umkm::geomFromTextExpression().') <= ?', [$pointWkt, $radiusMeters]);
             }
 
             $query->when($selectedSort === 'nearest' && $defaultLat !== 0 && $defaultLng !== 0, function ($nearestQuery) use ($defaultLat, $defaultLng) {
-                $pointWkt = sprintf('POINT(%s %s)', $defaultLng, $defaultLat);
+                $pointWkt = Umkm::pointWkt($defaultLat, $defaultLng);
 
-                return $nearestQuery->selectRaw('umkm.*, ST_Distance_Sphere(location, ST_GeomFromText(?, 4326)) as jarak_meter', [$pointWkt])
+                return $nearestQuery->selectRaw('umkm.*, ST_Distance_Sphere(location, '.Umkm::geomFromTextExpression().') as jarak_meter', [$pointWkt])
                     ->orderByRaw('jarak_meter ASC');
             }, function ($baseQuery) {
                 return $baseQuery;

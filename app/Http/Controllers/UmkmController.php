@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kategori;
+use App\Models\KlaimUsaha;
 use App\Models\LaporanKunjungan;
 use App\Models\Umkm;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class UmkmController extends Controller
 {
@@ -17,7 +19,7 @@ class UmkmController extends Controller
             'Rantau Pulung', 'Muara Wahau', 'Kongbeng', 'Muara Bengkal',
             'Muara Ancalong', 'Busang', 'Telen', 'Sandaran',
             'Sangkulirang', 'Kaliorang', 'Kaubun', 'Karangan',
-            'Batu Ampar', 'Long Mesangat'
+            'Batu Ampar', 'Long Mesangat',
         ];
 
         $kategoriList = Kategori::all();
@@ -26,11 +28,11 @@ class UmkmController extends Controller
 
         // Pencarian Nama / Deskripsi
         if ($request->filled('q')) {
-            $keyword = '%' . $request->q . '%';
+            $keyword = '%'.$request->q.'%';
             $query->where(function ($q) use ($keyword) {
                 $q->where('nama_usaha', 'like', $keyword)
-                  ->orWhere('deskripsi', 'like', $keyword)
-                  ->orWhere('alamat', 'like', $keyword);
+                    ->orWhere('deskripsi', 'like', $keyword)
+                    ->orWhere('alamat', 'like', $keyword);
             });
         }
 
@@ -98,9 +100,9 @@ class UmkmController extends Controller
      */
     public function nearby(Request $request)
     {
-        $lat = (float)$request->get('lat', 0.493);
-        $lng = (float)$request->get('lng', 117.545);
-        $radius = (int)$request->get('radius', 5000); // 5km default
+        $lat = (float) $request->get('lat', 0.493);
+        $lng = (float) $request->get('lng', 117.545);
+        $radius = (int) $request->get('radius', 5000); // 5km default
 
         $results = Umkm::active()
             ->nearby($lat, $lng, $radius)
@@ -114,10 +116,10 @@ class UmkmController extends Controller
                     'slug' => $item->slug,
                     'kecamatan' => $item->kecamatan,
                     'kategori' => $item->kategori?->nama,
-                    'lat' => (float)$item->latitude,
-                    'lng' => (float)$item->longitude,
+                    'lat' => (float) $item->latitude,
+                    'lng' => (float) $item->longitude,
                     'jarak_meter' => round($item->jarak_meter),
-                    'rating' => (float)$item->rating,
+                    'rating' => (float) $item->rating,
                     'status_klaim' => $item->status_klaim,
                     'url' => route('umkm.show', $item->slug),
                 ];
@@ -126,7 +128,7 @@ class UmkmController extends Controller
         return response()->json([
             'status' => 'success',
             'count' => $results->count(),
-            'data' => $results
+            'data' => $results,
         ]);
     }
 
@@ -141,7 +143,7 @@ class UmkmController extends Controller
             'Rantau Pulung', 'Muara Wahau', 'Kongbeng', 'Muara Bengkal',
             'Muara Ancalong', 'Busang', 'Telen', 'Sandaran',
             'Sangkulirang', 'Kaliorang', 'Kaubun', 'Karangan',
-            'Batu Ampar', 'Long Mesangat'
+            'Batu Ampar', 'Long Mesangat',
         ];
 
         return view('umkm.create-mandiri', compact('kategoriList', 'daftarKecamatan'));
@@ -174,11 +176,11 @@ class UmkmController extends Controller
             'dokumen_ktp.required' => 'Identitas KTP wajib diunggah untuk verifikasi keabsahan pemilik.',
         ]);
 
-        $baseSlug = \Illuminate\Support\Str::slug($validated['nama_usaha']);
+        $baseSlug = Str::slug($validated['nama_usaha']);
         $slug = $baseSlug;
         $counter = 1;
         while (Umkm::where('slug', $slug)->exists()) {
-            $slug = $baseSlug . '-' . $counter;
+            $slug = $baseSlug.'-'.$counter;
             $counter++;
         }
 
@@ -187,8 +189,8 @@ class UmkmController extends Controller
             $fotoUtamaPath = $request->file('foto_utama')->store('umkm/foto', 'public');
         }
 
-        $lat = (float)$validated['latitude'];
-        $lng = (float)$validated['longitude'];
+        $lat = (float) $validated['latitude'];
+        $lng = (float) $validated['longitude'];
 
         $umkm = Umkm::create([
             'nama_usaha' => $validated['nama_usaha'],
@@ -198,7 +200,7 @@ class UmkmController extends Controller
             'alamat' => $validated['alamat'],
             'kecamatan' => $validated['kecamatan'],
             'kelurahan_desa' => $validated['kelurahan_desa'] ?? null,
-            'location' => \Illuminate\Support\Facades\DB::raw("ST_GeomFromText('POINT({$lng} {$lat})', 4326)"),
+            'location' => Umkm::makePoint($lat, $lng),
             'telepon' => $validated['telepon'] ?? null,
             'email' => $validated['email'] ?? null,
             'instagram' => $validated['instagram'] ?? null,
@@ -216,7 +218,7 @@ class UmkmController extends Controller
             $pathBukti = $request->file('dokumen_bukti_usaha')->store('dokumen/bukti_usaha', 'public');
         }
 
-        \App\Models\KlaimUsaha::create([
+        KlaimUsaha::create([
             'umkm_id' => $umkm->id,
             'pelaku_usaha_id' => $pelaku->id,
             'dokumen_ktp' => $pathKtp,

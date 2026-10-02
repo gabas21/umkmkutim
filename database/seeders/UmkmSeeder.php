@@ -50,14 +50,16 @@ class UmkmSeeder extends Seeder
     protected function seedFromCsv(string $csvPath, array $kategoriMap, int $defaultKategoriId): void
     {
         $handle = fopen($csvPath, 'r');
-        if (!$handle) {
+        if (! $handle) {
             $this->command?->error("Gagal membuka file CSV: {$csvPath}");
+
             return;
         }
 
         $header = fgetcsv($handle);
-        if (!$header) {
+        if (! $header) {
             fclose($handle);
+
             return;
         }
 
@@ -82,8 +84,8 @@ class UmkmSeeder extends Seeder
             $alamat = trim($row[3] ?? "Jl. Poros {$kecamatan}, Kutai Timur");
             $lat = (float) ($row[4] ?? 0.5051);
             $lng = (float) ($row[5] ?? 117.5398);
-            $telepon = !empty($row[6]) ? trim($row[6]) : null;
-            $pemilik = !empty($row[7]) ? trim($row[7]) : null;
+            $telepon = ! empty($row[6]) ? trim($row[6]) : null;
+            $pemilik = ! empty($row[7]) ? trim($row[7]) : null;
 
             if (empty($namaUsaha)) {
                 continue;
@@ -95,7 +97,7 @@ class UmkmSeeder extends Seeder
             // Buat slug unik
             $baseSlug = Str::slug($namaUsaha);
             if (empty($baseSlug)) {
-                $baseSlug = 'umkm-kutim-' . ($totalInserted + count($batch) + 1);
+                $baseSlug = 'umkm-kutim-'.($totalInserted + count($batch) + 1);
             }
 
             if (isset($usedSlugs[$baseSlug])) {
@@ -112,35 +114,35 @@ class UmkmSeeder extends Seeder
             $jumlahReview = mt_rand(2, 45);
             $statusKlaim = (mt_rand(1, 100) <= 20) ? 'terverifikasi' : 'belum_diklaim';
 
-            $deskripsi = "Usaha {$namaUsaha}" . ($pemilik ? " dikelola oleh {$pemilik}," : "") . " melayani masyarakat di kawasan {$kecamatan}, Kabupaten Kutai Timur.";
+            $deskripsi = "Usaha {$namaUsaha}".($pemilik ? " dikelola oleh {$pemilik}," : '')." melayani masyarakat di kawasan {$kecamatan}, Kabupaten Kutai Timur.";
 
             $batch[] = [
-                'nama_usaha'      => $namaUsaha,
-                'slug'            => $slug,
-                'kategori_id'     => $kategoriId,
-                'deskripsi'       => $deskripsi,
-                'alamat'          => $alamat,
-                'kecamatan'       => $kecamatan,
-                'kelurahan_desa'  => null,
-                'location'        => DB::raw("ST_GeomFromText('POINT({$lng} {$lat})', 4326)"),
-                'telepon'         => $telepon,
-                'email'           => null,
-                'instagram'       => null,
-                'website'         => null,
-                'foto_utama'      => null,
-                'foto_galeri'     => null,
+                'nama_usaha' => $namaUsaha,
+                'slug' => $slug,
+                'kategori_id' => $kategoriId,
+                'deskripsi' => $deskripsi,
+                'alamat' => $alamat,
+                'kecamatan' => $kecamatan,
+                'kelurahan_desa' => null,
+                'location' => Umkm::makePoint($lat, $lng),
+                'telepon' => $telepon,
+                'email' => null,
+                'instagram' => null,
+                'website' => null,
+                'foto_utama' => null,
+                'foto_galeri' => null,
                 'jam_operasional' => json_encode([
                     'senin_jumat' => '08:00 - 21:00 WITA',
-                    'sabtu_minggu' => '08:00 - 22:00 WITA'
+                    'sabtu_minggu' => '08:00 - 22:00 WITA',
                 ]),
-                'rating'          => $rating,
-                'jumlah_review'   => $jumlahReview,
-                'jumlah_dilihat'  => mt_rand(10, 350),
-                'sumber_data'     => 'import',
-                'status_klaim'    => $statusKlaim,
-                'status'          => 'active',
-                'created_at'      => $now,
-                'updated_at'      => $now,
+                'rating' => $rating,
+                'jumlah_review' => $jumlahReview,
+                'jumlah_dilihat' => mt_rand(10, 350),
+                'sumber_data' => 'import',
+                'status_klaim' => $statusKlaim,
+                'status' => 'active',
+                'created_at' => $now,
+                'updated_at' => $now,
             ];
 
             if (count($batch) >= $batchSize) {
@@ -148,12 +150,12 @@ class UmkmSeeder extends Seeder
                 $totalInserted += count($batch);
                 $batch = [];
                 if ($this->command) {
-                    $this->command->getOutput()->write(".");
+                    $this->command->getOutput()->write('.');
                 }
             }
         }
 
-        if (!empty($batch)) {
+        if (! empty($batch)) {
             DB::table('umkm')->insert($batch);
             $totalInserted += count($batch);
         }
@@ -171,24 +173,24 @@ class UmkmSeeder extends Seeder
         $this->command?->info('Men-generate data UMKM representatif untuk 18 kecamatan di Kutai Timur...');
 
         $kecamatanCoords = [
-            'Sangatta Utara'   => [0.5051, 117.5398],
+            'Sangatta Utara' => [0.5051, 117.5398],
             'Sangatta Selatan' => [0.4697, 117.5300],
-            'Bengalon'         => [0.6604, 117.5752],
-            'Kongbeng'         => [1.2803, 117.0672],
-            'Muara Wahau'      => [1.1191, 116.8794],
-            'Sangkulirang'     => [1.0622, 118.0864],
-            'Teluk Pandan'     => [0.1840, 117.3162],
-            'Rantau Pulung'    => [0.6052, 117.1911],
-            'Kaliorang'        => [0.8715, 117.8595],
-            'Kaubun'           => [1.0197, 117.7849],
-            'Muara Bengkal'    => [0.3662, 116.7802],
-            'Muara Ancalong'   => [0.4791, 116.5102],
-            'Busang'           => [0.9276, 116.2954],
-            'Telen'            => [0.8628, 116.7715],
-            'Sandaran'         => [1.0063, 118.4672],
-            'Karangan'         => [1.3267, 117.5958],
-            'Batu Ampar'       => [0.6700, 116.8975],
-            'Long Mesangat'    => [0.5799, 116.7119],
+            'Bengalon' => [0.6604, 117.5752],
+            'Kongbeng' => [1.2803, 117.0672],
+            'Muara Wahau' => [1.1191, 116.8794],
+            'Sangkulirang' => [1.0622, 118.0864],
+            'Teluk Pandan' => [0.1840, 117.3162],
+            'Rantau Pulung' => [0.6052, 117.1911],
+            'Kaliorang' => [0.8715, 117.8595],
+            'Kaubun' => [1.0197, 117.7849],
+            'Muara Bengkal' => [0.3662, 116.7802],
+            'Muara Ancalong' => [0.4791, 116.5102],
+            'Busang' => [0.9276, 116.2954],
+            'Telen' => [0.8628, 116.7715],
+            'Sandaran' => [1.0063, 118.4672],
+            'Karangan' => [1.3267, 117.5958],
+            'Batu Ampar' => [0.6700, 116.8975],
+            'Long Mesangat' => [0.5799, 116.7119],
         ];
 
         $templateUsaha = [
@@ -229,38 +231,38 @@ class UmkmSeeder extends Seeder
                 $lat = $baseLat + $latOffset;
                 $lng = $baseLng + $lngOffset;
 
-                $slug = Str::slug("{$namaUsaha}-" . Str::random(5));
+                $slug = Str::slug("{$namaUsaha}-".Str::random(5));
                 $rating = mt_rand(40, 50) / 10;
                 $jumlahReview = mt_rand(3, 35);
                 $statusKlaim = ($i % 4 === 0) ? 'terverifikasi' : 'belum_diklaim';
 
                 $batch[] = [
-                    'nama_usaha'      => $namaUsaha,
-                    'slug'            => $slug,
-                    'kategori_id'     => $kategoriId,
-                    'deskripsi'       => "Usaha {$namaUsaha} beroperasi aktif dan menyediakan produk unggulan daerah di kecamatan {$kecamatan}.",
-                    'alamat'          => "Jl. Utama RT 0{$i}, Kecamatan {$kecamatan}, Kutai Timur",
-                    'kecamatan'       => $kecamatan,
-                    'kelurahan_desa'  => null,
-                    'location'        => DB::raw("ST_GeomFromText('POINT({$lng} {$lat})', 4326)"),
-                    'telepon'         => '08' . mt_rand(1111111111, 9999999999),
-                    'email'           => null,
-                    'instagram'       => null,
-                    'website'         => null,
-                    'foto_utama'      => null,
-                    'foto_galeri'     => null,
+                    'nama_usaha' => $namaUsaha,
+                    'slug' => $slug,
+                    'kategori_id' => $kategoriId,
+                    'deskripsi' => "Usaha {$namaUsaha} beroperasi aktif dan menyediakan produk unggulan daerah di kecamatan {$kecamatan}.",
+                    'alamat' => "Jl. Utama RT 0{$i}, Kecamatan {$kecamatan}, Kutai Timur",
+                    'kecamatan' => $kecamatan,
+                    'kelurahan_desa' => null,
+                    'location' => Umkm::makePoint($lat, $lng),
+                    'telepon' => '08'.mt_rand(1111111111, 9999999999),
+                    'email' => null,
+                    'instagram' => null,
+                    'website' => null,
+                    'foto_utama' => null,
+                    'foto_galeri' => null,
                     'jam_operasional' => json_encode([
                         'senin_jumat' => '08:00 - 21:00 WITA',
-                        'sabtu_minggu' => '08:00 - 22:00 WITA'
+                        'sabtu_minggu' => '08:00 - 22:00 WITA',
                     ]),
-                    'rating'          => $rating,
-                    'jumlah_review'   => $jumlahReview,
-                    'jumlah_dilihat'  => mt_rand(15, 200),
-                    'sumber_data'     => 'import',
-                    'status_klaim'    => $statusKlaim,
-                    'status'          => 'active',
-                    'created_at'      => $now,
-                    'updated_at'      => $now,
+                    'rating' => $rating,
+                    'jumlah_review' => $jumlahReview,
+                    'jumlah_dilihat' => mt_rand(15, 200),
+                    'sumber_data' => 'import',
+                    'status_klaim' => $statusKlaim,
+                    'status' => 'active',
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ];
 
                 if (count($batch) >= 200) {
@@ -271,7 +273,7 @@ class UmkmSeeder extends Seeder
             }
         }
 
-        if (!empty($batch)) {
+        if (! empty($batch)) {
             DB::table('umkm')->insert($batch);
             $totalInserted += count($batch);
         }
@@ -284,19 +286,19 @@ class UmkmSeeder extends Seeder
      */
     protected function refreshGridCluster(): void
     {
-        if (!Schema::hasTable('umkm_grid_cluster')) {
+        if (! Schema::hasTable('umkm_grid_cluster')) {
             return;
         }
 
         $this->command?->info('Memperbarui tabel umkm_grid_cluster agar peta langsung menampilkan kluster & titik...');
 
-        DB::statement("TRUNCATE TABLE umkm_grid_cluster");
+        DB::statement('TRUNCATE TABLE umkm_grid_cluster');
 
-        DB::statement("
+        DB::statement('
             INSERT INTO umkm_grid_cluster (grid_lat, grid_lng, jumlah_umkm, terverifikasi_count, kecamatan, sample_umkm_id, created_at, updated_at)
             SELECT 
-                ROUND(" . Umkm::latitudeExpression() . ", 2) as grid_lat,
-                ROUND(" . Umkm::longitudeExpression() . ", 2) as grid_lng,
+                ROUND('.Umkm::latitudeExpression().', 2) as grid_lat,
+                ROUND('.Umkm::longitudeExpression().", 2) as grid_lng,
                 COUNT(*) as jumlah_umkm,
                 SUM(CASE WHEN status_klaim = 'terverifikasi' THEN 1 ELSE 0 END) as terverifikasi_count,
                 SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT kecamatan ORDER BY kecamatan SEPARATOR ', '), ', ', 1) as kecamatan,

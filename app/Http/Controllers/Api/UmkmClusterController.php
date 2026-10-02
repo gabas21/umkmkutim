@@ -7,6 +7,7 @@ use App\Models\Umkm;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class UmkmClusterController extends Controller
 {
@@ -38,7 +39,7 @@ class UmkmClusterController extends Controller
 
     public function index(Request $request)
     {
-        $zoom  = (int) ($request->zoom ?? 9);
+        $zoom = (int) ($request->zoom ?? 9);
         $swLat = (float) $request->sw_lat;
         $swLng = (float) $request->sw_lng;
         $neLat = (float) $request->ne_lat;
@@ -46,10 +47,10 @@ class UmkmClusterController extends Controller
 
         // gridSize null => return individual points (switch to points mode at zoom >= 14)
         $gridSize = match (true) {
-            $zoom <= 9  => 0.10,
+            $zoom <= 9 => 0.10,
             $zoom <= 11 => 0.05,
             $zoom <= 13 => 0.02,
-            default     => null,
+            default => null,
         };
 
         $cacheParams = [
@@ -68,20 +69,20 @@ class UmkmClusterController extends Controller
             $minLng = min($swLng, $neLng);
             $maxLng = max($swLng, $neLng);
             $precision = $zoom >= 14 ? 3 : 2;
-            $cacheParams['bbox'] = round($minLat, $precision) . '_' . round($minLng, $precision) . '_' . round($maxLat, $precision) . '_' . round($maxLng, $precision);
+            $cacheParams['bbox'] = round($minLat, $precision).'_'.round($minLng, $precision).'_'.round($maxLat, $precision).'_'.round($maxLng, $precision);
         } else {
             $cacheParams['bbox'] = 'all';
             $minLat = $maxLat = $minLng = $maxLng = null;
         }
 
-        $cacheKey = 'umkm_grid_cluster_v1_' . md5(json_encode($cacheParams));
+        $cacheKey = 'umkm_grid_cluster_v1_'.md5(json_encode($cacheParams));
 
         $result = Cache::remember($cacheKey, 600, function () use ($request, $zoom, $gridSize, $minLat, $maxLat, $minLng, $maxLng) {
             $query = Umkm::active();
 
             if ($zoom > 10 && $minLat !== null && $maxLat !== null && $minLng !== null && $maxLng !== null) {
                 $polygon = "POLYGON(($minLng $minLat, $maxLng $minLat, $maxLng $maxLat, $minLng $maxLat, $minLng $minLat))";
-                $query->whereRaw("MBRContains(ST_GeomFromText(?, 4326), location)", [$polygon]);
+                $query->whereRaw('MBRContains('.Umkm::geomFromTextExpression().', location)', [$polygon]);
             }
 
             if ($request->filled('kecamatan')) {
@@ -94,10 +95,10 @@ class UmkmClusterController extends Controller
                 $query->where('status_klaim', $request->status_klaim);
             }
             if ($request->filled('q')) {
-                $keyword = '%' . $request->q . '%';
+                $keyword = '%'.$request->q.'%';
                 $query->where(function ($q) use ($keyword) {
                     $q->where('nama_usaha', 'like', $keyword)
-                      ->orWhere('alamat', 'like', $keyword);
+                        ->orWhere('alamat', 'like', $keyword);
                 });
             }
 
@@ -111,35 +112,35 @@ class UmkmClusterController extends Controller
                     ->get()
                     ->map(function ($item) {
                         return [
-                            'type'          => 'point',
-                            'id'            => $item->id,
-                            'nama'          => $item->nama_usaha,
-                            'nama_usaha'    => $item->nama_usaha,
-                            'slug'          => $item->slug,
-                            'kategori'      => $item->kategori?->nama ?? 'Umum',
-                            'icon'          => $item->kategori?->icon ?? 'store',
-                            'kecamatan'     => $item->kecamatan,
-                            'alamat'        => $item->alamat,
-                            'lat'           => (float) $item->latitude,
-                            'lng'           => (float) $item->longitude,
-                            'rating'        => (float) $item->rating,
+                            'type' => 'point',
+                            'id' => $item->id,
+                            'nama' => $item->nama_usaha,
+                            'nama_usaha' => $item->nama_usaha,
+                            'slug' => $item->slug,
+                            'kategori' => $item->kategori?->nama ?? 'Umum',
+                            'icon' => $item->kategori?->icon ?? 'store',
+                            'kecamatan' => $item->kecamatan,
+                            'alamat' => $item->alamat,
+                            'lat' => (float) $item->latitude,
+                            'lng' => (float) $item->longitude,
+                            'rating' => (float) $item->rating,
                             'jumlah_review' => (int) $item->jumlah_review,
-                            'status_klaim'  => $item->status_klaim,
-                            'foto_utama'    => $item->foto_utama ? (str_starts_with($item->foto_utama, 'http') ? $item->foto_utama : asset($item->foto_utama)) : asset('umkm.png'),
-                            'url'           => route('umkm.show', $item->slug),
+                            'status_klaim' => $item->status_klaim,
+                            'foto_utama' => $item->foto_utama ? (str_starts_with($item->foto_utama, 'http') ? $item->foto_utama : asset($item->foto_utama)) : asset('umkm.png'),
+                            'url' => route('umkm.show', $item->slug),
                         ];
                     })->all();
 
                 return [
-                    'mode'        => 'points',
-                    'zoom'        => $zoom,
+                    'mode' => 'points',
+                    'zoom' => $zoom,
                     'total_count' => count($points),
-                    'data'        => $points,
+                    'data' => $points,
                 ];
             }
 
             // KASUS 2: Zoom Rendah/Sedang (< 15) -> Server-Side Grid Clustering
-            $isUnfiltered = !$request->filled('kategori') && !$request->filled('q') && !$request->filled('status_klaim');
+            $isUnfiltered = ! $request->filled('kategori') && ! $request->filled('q') && ! $request->filled('status_klaim');
             $truncated = false;
 
             // Helper: aggregate an array of cells into clusters at a given grid resolution
@@ -156,13 +157,13 @@ class UmkmClusterController extends Controller
                     $gridLng = round($lng / $gs) * $gs;
                     $key = sprintf('%.4f_%.4f', $gridLat, $gridLng);
 
-                    if (!isset($clusters[$key])) {
+                    if (! isset($clusters[$key])) {
                         $clusters[$key] = [
                             'grid_lat' => $gridLat,
                             'grid_lng' => $gridLng,
-                            'lat_sum'  => 0.0,
-                            'lng_sum'  => 0.0,
-                            'count'    => 0,
+                            'lat_sum' => 0.0,
+                            'lng_sum' => 0.0,
+                            'count' => 0,
                             'terverifikasi_count' => 0,
                             'kecamatans' => [],
                             'raw_cells' => [],
@@ -179,20 +180,21 @@ class UmkmClusterController extends Controller
                         $clusters[$key]['kecamatans'][$kec] = ($clusters[$key]['kecamatans'][$kec] ?? 0) + $count;
                     }
                 }
+
                 return $clusters;
             };
 
             // Maximum UMKM per cluster before auto-splitting at higher zoom levels
             $maxClusterCount = 2000;
 
-            $hasGridCluster = \Illuminate\Support\Facades\Schema::hasTable('umkm_grid_cluster')
+            $hasGridCluster = Schema::hasTable('umkm_grid_cluster')
                 && DB::table('umkm_grid_cluster')->exists();
 
             if ($isUnfiltered && $hasGridCluster) {
                 // Saat zoom <= 9 (tampilan seluruh Kabupaten Kutai Timur):
                 // Kelompokkan secara administratif per kecamatan agar tiap wilayah memiliki
                 // tepat 1 penanda kluster resmi di pusat geografisnya, tanpa tumpang tindih.
-                if ($zoom <= 9 && !$request->filled('kecamatan')) {
+                if ($zoom <= 9 && ! $request->filled('kecamatan')) {
                     $kecRows = DB::table('umkm_grid_cluster')
                         ->select(
                             'kecamatan',
@@ -212,12 +214,12 @@ class UmkmClusterController extends Controller
                         $clusters[$r->kecamatan] = [
                             'grid_lat' => $lat,
                             'grid_lng' => $lng,
-                            'lat_sum'  => $lat * $count,
-                            'lng_sum'  => $lng * $count,
-                            'count'    => $count,
+                            'lat_sum' => $lat * $count,
+                            'lng_sum' => $lng * $count,
+                            'count' => $count,
                             'terverifikasi_count' => (int) $r->total_verif,
                             'kecamatans' => [$r->kecamatan => $count],
-                            'raw_cells'  => [],
+                            'raw_cells' => [],
                         ];
                     }
                     $totalCount = (int) $kecRows->sum('total_umkm');
@@ -225,7 +227,7 @@ class UmkmClusterController extends Controller
                     $gridQuery = DB::table('umkm_grid_cluster');
                     if ($zoom > 10 && $minLat !== null && $maxLat !== null && $minLng !== null && $maxLng !== null) {
                         $gridQuery->whereBetween('grid_lat', [$minLat, $maxLat])
-                                  ->whereBetween('grid_lng', [$minLng, $maxLng]);
+                            ->whereBetween('grid_lng', [$minLng, $maxLng]);
                     }
                     if ($request->filled('kecamatan')) {
                         $gridQuery->where('kecamatan', $request->kecamatan);
@@ -248,27 +250,29 @@ class UmkmClusterController extends Controller
                                 $subGridSize = $gridSize / pow(2, $split + 1);
                                 $subClusters = $aggregateCells($c['raw_cells'], $subGridSize);
                                 foreach ($subClusters as $sk => $sc) {
-                                    $newClusters[$key . '_' . $sk] = $sc;
+                                    $newClusters[$key.'_'.$sk] = $sc;
                                 }
                             } else {
                                 $newClusters[$key] = $c;
                             }
                         }
                         $clusters = $newClusters;
-                        if (!$hasOversized) break;
+                        if (! $hasOversized) {
+                            break;
+                        }
                     }
                 }
             } else {
                 // Saat filter aktif dan zoom <= 9 tanpa bbox sempit:
                 // Agregasi langsung per kecamatan untuk performa super cepat
-                if ($zoom <= 9 && !$request->filled('kecamatan') && $minLat === null) {
+                if ($zoom <= 9 && ! $request->filled('kecamatan') && $minLat === null) {
                     $kecPoints = $query->selectRaw("
                         kecamatan,
                         COUNT(*) as count,
                         SUM(CASE WHEN status_klaim = 'terverifikasi' THEN 1 ELSE 0 END) as terverifikasi_count,
-                        AVG(" . Umkm::latitudeExpression() . ") as avg_lat,
-                        AVG(" . Umkm::longitudeExpression() . ") as avg_lng
-                    ")->groupBy('kecamatan')->get();
+                        AVG(".Umkm::latitudeExpression().') as avg_lat,
+                        AVG('.Umkm::longitudeExpression().') as avg_lng
+                    ')->groupBy('kecamatan')->get();
 
                     $totalCount = (int) $kecPoints->sum('count');
                     $clusters = [];
@@ -279,21 +283,21 @@ class UmkmClusterController extends Controller
                         $clusters[$kp->kecamatan] = [
                             'grid_lat' => $lat,
                             'grid_lng' => $lng,
-                            'lat_sum'  => $lat * $cnt,
-                            'lng_sum'  => $lng * $cnt,
-                            'count'    => $cnt,
+                            'lat_sum' => $lat * $cnt,
+                            'lng_sum' => $lng * $cnt,
+                            'count' => $cnt,
                             'terverifikasi_count' => (int) $kp->terverifikasi_count,
                             'kecamatans' => [$kp->kecamatan => $cnt],
                         ];
                     }
                 } else {
                     // PATCH: cap jumlah baris raw yang ditarik untuk clustering manual di PHP.
-                    $rawPoints = $query->selectRaw("
-                        " . Umkm::latitudeExpression() . " AS lat,
-                        " . Umkm::longitudeExpression() . " AS lng,
+                    $rawPoints = $query->selectRaw('
+                        '.Umkm::latitudeExpression().' AS lat,
+                        '.Umkm::longitudeExpression().' AS lng,
                         kecamatan,
                         status_klaim
-                    ")->limit(self::MAX_RAW_POINTS + 1)->get();
+                    ')->limit(self::MAX_RAW_POINTS + 1)->get();
 
                     if ($rawPoints->count() > self::MAX_RAW_POINTS) {
                         $truncated = true;
@@ -307,39 +311,40 @@ class UmkmClusterController extends Controller
                         $lat = (float) $pt->lat;
                         $lng = (float) $pt->lng;
 
-                        if (!$lat || !$lng) continue;
+                        if (! $lat || ! $lng) {
+                            continue;
+                        }
 
+                        $gridLat = round($lat / $gridSize) * $gridSize;
+                        $gridLng = round($lng / $gridSize) * $gridSize;
+                        $key = sprintf('%.4f_%.4f', $gridLat, $gridLng);
 
-                    $gridLat = round($lat / $gridSize) * $gridSize;
-                    $gridLng = round($lng / $gridSize) * $gridSize;
-                    $key = sprintf('%.4f_%.4f', $gridLat, $gridLng);
+                        if (! isset($clusters[$key])) {
+                            $clusters[$key] = [
+                                'grid_lat' => $gridLat,
+                                'grid_lng' => $gridLng,
+                                'lat_sum' => 0.0,
+                                'lng_sum' => 0.0,
+                                'count' => 0,
+                                'terverifikasi_count' => 0,
+                                'kecamatans' => [],
+                            ];
+                        }
 
-                    if (!isset($clusters[$key])) {
-                        $clusters[$key] = [
-                            'grid_lat' => $gridLat,
-                            'grid_lng' => $gridLng,
-                            'lat_sum'  => 0.0,
-                            'lng_sum'  => 0.0,
-                            'count'    => 0,
-                            'terverifikasi_count' => 0,
-                            'kecamatans' => [],
-                        ];
-                    }
+                        $clusters[$key]['lat_sum'] += $lat;
+                        $clusters[$key]['lng_sum'] += $lng;
+                        $clusters[$key]['count']++;
 
-                    $clusters[$key]['lat_sum'] += $lat;
-                    $clusters[$key]['lng_sum'] += $lng;
-                    $clusters[$key]['count']++;
+                        if ($pt->status_klaim === 'terverifikasi') {
+                            $clusters[$key]['terverifikasi_count']++;
+                        }
 
-                    if ($pt->status_klaim === 'terverifikasi') {
-                        $clusters[$key]['terverifikasi_count']++;
-                    }
-
-                    if ($pt->kecamatan) {
-                        $clusters[$key]['kecamatans'][$pt->kecamatan] = ($clusters[$key]['kecamatans'][$pt->kecamatan] ?? 0) + 1;
+                        if ($pt->kecamatan) {
+                            $clusters[$key]['kecamatans'][$pt->kecamatan] = ($clusters[$key]['kecamatans'][$pt->kecamatan] ?? 0) + 1;
+                        }
                     }
                 }
             }
-        }
 
             $clusterResults = [];
             foreach ($clusters as $c) {
@@ -349,29 +354,29 @@ class UmkmClusterController extends Controller
 
                 arsort($c['kecamatans']);
                 $topKecamatans = array_keys(array_slice($c['kecamatans'], 0, 2, true));
-                $topKecamatanStr = !empty($topKecamatans) ? implode(', ', $topKecamatans) : 'Kutai Timur';
+                $topKecamatanStr = ! empty($topKecamatans) ? implode(', ', $topKecamatans) : 'Kutai Timur';
 
                 $clusterResults[] = [
-                    'type'                => 'cluster',
-                    'lat'                 => $avgLat,
-                    'lng'                 => $avgLng,
-                    'count'               => $count,
+                    'type' => 'cluster',
+                    'lat' => $avgLat,
+                    'lng' => $avgLng,
+                    'count' => $count,
                     'terverifikasi_count' => $c['terverifikasi_count'],
-                    'label'               => $count >= 1000 ? round($count / 1000, 1) . 'k' : (string) $count,
-                    'kecamatan'           => $topKecamatanStr,
-                    'kecamatan_detail'    => $c['kecamatans'],
+                    'label' => $count >= 1000 ? round($count / 1000, 1).'k' : (string) $count,
+                    'kecamatan' => $topKecamatanStr,
+                    'kecamatan_detail' => $c['kecamatans'],
                 ];
             }
 
-            usort($clusterResults, fn($a, $b) => $b['count'] <=> $a['count']);
+            usort($clusterResults, fn ($a, $b) => $b['count'] <=> $a['count']);
 
             return [
-                'mode'          => 'clusters',
-                'zoom'          => $zoom,
-                'total_count'   => $totalCount,
+                'mode' => 'clusters',
+                'zoom' => $zoom,
+                'total_count' => $totalCount,
                 'cluster_count' => count($clusterResults),
-                'truncated'     => $truncated,
-                'data'          => $clusterResults,
+                'truncated' => $truncated,
+                'data' => $clusterResults,
             ];
         });
 
