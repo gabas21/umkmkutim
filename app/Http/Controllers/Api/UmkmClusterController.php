@@ -127,7 +127,7 @@ class UmkmClusterController extends Controller
                             'jumlah_review' => (int) $item->jumlah_review,
                             'status_klaim' => $item->status_klaim,
                             'foto_utama' => $item->foto_utama ? (str_starts_with($item->foto_utama, 'http') ? $item->foto_utama : asset($item->foto_utama)) : asset('umkm.png'),
-                            'url' => route('umkm.show', $item->slug),
+                            'url' => $item->slug ? route('preview.mobile.umkm.detail', ['slug' => $item->slug]) : '#',
                         ];
                     })->all();
 

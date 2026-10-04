@@ -77,6 +77,7 @@
                                 $shop = $promo['shop'] ?? 'Toko UMKM Kutim';
                                 $description = $promo['description'] ?? 'Nikmati promo spesial dari produk lokal pilihan di Kutim.';
                                 $image = $promo['image'] ?? 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=900&q=80';
+                                $promoUrl = $promo['url'] ?? route('preview.mobile.umkm');
                             @endphp
                             <article class="card-soft overflow-hidden rounded-[24px]">
                                 <img src="{{ $image }}" alt="{{ $title }}" class="h-32 w-full object-cover" />
@@ -92,7 +93,7 @@
                                             <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Toko</p>
                                             <p class="text-[11px] font-semibold text-slate-700">{{ $shop }}</p>
                                         </div>
-                                        <button class="rounded-full bg-green-700 px-3 py-1.5 text-[10px] font-bold text-white">Lihat</button>
+                                        <a href="{{ $promoUrl }}" class="rounded-full bg-green-700 px-3 py-1.5 text-[10px] font-bold text-white">Lihat</a>
                                     </div>
                                 </div>
                             </article>

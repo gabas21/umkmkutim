@@ -71,6 +71,8 @@ class HomeController extends Controller
                     $alamat = trim((string) ($umkm->alamat ?? ''));
                     $deskripsi = trim((string) ($umkm->deskripsi ?? ''));
 
+                    $promoUrl = $umkm->slug ? route('preview.mobile.umkm.detail', ['slug' => $umkm->slug]) : route('preview.mobile.umkm');
+
                     return [
                         'title' => 'Promo '.$namaUsaha,
                         'type' => $index === 0 ? 'PROMO' : 'UMKM',
@@ -83,6 +85,7 @@ class HomeController extends Controller
                             : 'Nikmati promo spesial dari '.$namaUsaha.' di '.($kecamatan !== '' ? $kecamatan : 'Kutim').'. Produk lokal pilihan yang siap mendukung kebutuhan harianmu.',
                         'image' => $this->resolveUmkmImage($umkm->foto_utama, $umkm->kategori->nama ?? null),
                         'badge' => 'UMKM',
+                        'url' => $promoUrl,
                     ];
                 })
                 ->toArray();
@@ -390,6 +393,7 @@ class HomeController extends Controller
         $fallbackPrices = [18000, 25000, 32000, 45000];
         $fallbackBadges = ['Terlaris', 'Favorit', 'Rekomendasi', 'Baru'];
         $fallbackCategories = ['Promo', 'Makanan', 'Minuman', 'Snack', 'Kerajinan', 'Fashion'];
+        $promoKeywords = ['promo', 'diskon', 'discount', 'sale', 'potongan', 'voucher', 'cashback', 'bonus', 'flash sale', 'spesial'];
 
         return collect($products)
             ->filter(fn ($product) => filled($product))
@@ -400,19 +404,71 @@ class HomeController extends Controller
                     ? (string) ($product['category'] ?? $product['kategori'] ?? $product['kategory'] ?? $product['jenis'] ?? '')
                     : '';
 
+                $originalPrice = is_array($product) && isset($product['price'])
+                    ? (float) preg_replace('/[^0-9.]/', '', (string) $product['price'])
+                    : $fallbackPrices[$index % count($fallbackPrices)];
+                $originalPrice = max(1000, $originalPrice > 0 ? $originalPrice : $fallbackPrices[$index % count($fallbackPrices)]);
+
+                $productDescription = is_array($product) ? (string) ($product['description'] ?? '') : '';
+                $productPromo = is_array($product) ? (string) ($product['promo'] ?? '') : '';
+                $sourceText = strtolower((string) ($name.' '.$category.' '.$productDescription.' '.$productPromo));
+                $isDiscounted = str_contains($sourceText, 'promo')
+                    || str_contains($sourceText, 'diskon')
+                    || str_contains($sourceText, 'discount')
+                    || str_contains($sourceText, 'sale')
+                    || str_contains($sourceText, 'potongan')
+                    || str_contains($sourceText, 'voucher')
+                    || str_contains($sourceText, 'cashback')
+                    || str_contains($sourceText, 'spesial');
+
+                $actualPrice = $isDiscounted ? max(1000, round($originalPrice * 0.7)) : $originalPrice;
+                $originalPriceFormatted = 'Rp '.number_format($originalPrice, 0, ',', '.');
+                $actualPriceFormatted = 'Rp '.number_format($actualPrice, 0, ',', '.');
+
                 return [
                     'name' => $name,
-                    'price' => 'Rp '.number_format($fallbackPrices[$index % count($fallbackPrices)], 0, ',', '.'),
+                    'price' => $actualPriceFormatted,
+                    'original_price' => $isDiscounted ? $originalPriceFormatted : null,
+                    'discounted' => $isDiscounted,
                     'description' => $fallbackDescriptions[$index % count($fallbackDescriptions)],
                     'image' => is_array($product) && filled($product['image'] ?? null)
                         ? $this->resolveUmkmImage((string) $product['image'], is_array($product) ? ($product['category'] ?? $product['kategori'] ?? null) : null)
                         : $fallbackImage,
-                    'badge' => $fallbackBadges[$index % count($fallbackBadges)],
+                    'badge' => $isDiscounted ? 'Promo' : $fallbackBadges[$index % count($fallbackBadges)],
                     'category' => $category !== '' ? $category : $fallbackCategories[$index % count($fallbackCategories)],
                 ];
             })
             ->take(6)
             ->all();
+    }
+
+    private function buildDetailPromo(?string $namaUsaha = null, ?string $deskripsi = null, array $produkUnggulan = []): ?array
+    {
+        $sources = collect([$namaUsaha, $deskripsi, ...$produkUnggulan])
+            ->filter(fn ($value) => is_string($value) && trim($value) !== '')
+            ->map(fn ($value) => trim((string) $value))
+            ->all();
+
+        if (empty($sources)) {
+            return null;
+        }
+
+        $combined = strtolower(preg_replace('/\s+/', ' ', implode(' ', $sources)) ?? '');
+        $promoKeywords = ['promo', 'diskon', 'discount', 'sale', 'spesial', 'voucher', 'cashback', 'gratis', 'flash sale', 'potongan', 'special offer', 'penawaran'];
+
+        foreach ($promoKeywords as $keyword) {
+            if (str_contains($combined, $keyword)) {
+                $promoDescription = trim((string) ($deskripsi ?: 'Nikmati promo spesial dari usaha lokal ini.'));
+
+                return [
+                    'label' => 'Promo',
+                    'title' => $namaUsaha ? 'Promo '.$namaUsaha : 'Promo UMKM',
+                    'description' => Str::limit(preg_replace('/\s+/', ' ', $promoDescription), 150),
+                ];
+            }
+        }
+
+        return null;
     }
 
     private function mobilePreviewData(): array
@@ -625,15 +681,14 @@ class HomeController extends Controller
             $umkm = Umkm::query()
                 ->where('slug', $slug)
                 ->orWhere('id', $slug)
+                ->withCoordinates()
                 ->with('kategori:id,nama')
                 ->first();
 
             if ($umkm) {
                 $fallbackImage = $this->resolveUmkmImage($umkm->foto_utama, $umkm->kategori?->nama ?? null);
-                $catalogProducts = $this->buildCatalogProducts(
-                    is_array($umkm->produk_unggulan ?? null) ? $umkm->produk_unggulan : ['Produk unggulan 1', 'Produk unggulan 2', 'Produk unggulan 3'],
-                    $fallbackImage
-                );
+                $produkUnggulan = is_array($umkm->produk_unggulan ?? null) ? $umkm->produk_unggulan : ['Produk unggulan 1', 'Produk unggulan 2', 'Produk unggulan 3'];
+                $catalogProducts = $this->buildCatalogProducts($produkUnggulan, $fallbackImage);
 
                 $data['detailUmkm'] = [
                     'nama_usaha' => $umkm->nama_usaha,
@@ -642,6 +697,8 @@ class HomeController extends Controller
                     'rating' => (float) ($umkm->rating ?? 4.8),
                     'alamat' => $umkm->alamat ?? $umkm->kecamatan ?? 'Kutim',
                     'kecamatan' => $umkm->kecamatan ?? 'Kutim',
+                    'latitude' => $umkm->latitude ?? null,
+                    'longitude' => $umkm->longitude ?? null,
                     'telepon' => $umkm->telepon ?? '+62 812-3456-7890',
                     'deskripsi' => $umkm->deskripsi ?? 'Produk lokal berkualitas dari komunitas UMKM Kabupaten Kutim, siap menjadi pilihan wisata kuliner dan kebutuhan harian masyarakat.',
                     'produk' => $umkm->produk_unggulan ?? ['Kopi lokal', 'Roti', 'Kerajinan tangan'],
@@ -650,6 +707,7 @@ class HomeController extends Controller
                     'website' => $umkm->website,
                     'links' => $this->buildDetailLinks($umkm->instagram, $umkm->website),
                     'whatsapp_url' => $this->resolveWhatsAppUrl($umkm->telepon),
+                    'promo' => $this->buildDetailPromo($umkm->nama_usaha, $umkm->deskripsi, $produkUnggulan),
                     'catalog_products' => $catalogProducts,
                 ];
             } else {
@@ -781,6 +839,8 @@ class HomeController extends Controller
                 ->limit(8)
                 ->get()
                 ->map(function ($umkm) {
+                    $fotoUtama = $this->resolveUmkmImage($umkm->foto_utama, $umkm->kategori?->nama ?? null);
+
                     return [
                         'id' => $umkm->id,
                         'slug' => $umkm->slug,
@@ -788,6 +848,8 @@ class HomeController extends Controller
                         'kategori' => ['nama' => $umkm->kategori?->nama ?? 'Umum'],
                         'rating' => (float) ($umkm->rating ?? 0),
                         'alamat' => $umkm->alamat ?? $umkm->kecamatan ?? 'Kutim',
+                        'foto_utama' => $fotoUtama,
+                        'url' => $umkm->slug ? route('preview.mobile.umkm.detail', ['slug' => $umkm->slug]) : '#',
                         // include coordinates when available (from withCoordinates()/nearby scopes)
                         'latitude' => isset($umkm->latitude) ? (float) $umkm->latitude : null,
                         'longitude' => isset($umkm->longitude) ? (float) $umkm->longitude : null,
@@ -912,6 +974,7 @@ class HomeController extends Controller
                     'shop' => $shop,
                     'description' => $description,
                     'image' => $image,
+                    'url' => $item['url'] ?? route('preview.mobile.umkm'),
                 ];
             })
             ->take(3)
@@ -919,9 +982,9 @@ class HomeController extends Controller
             ->toArray();
 
         $data['promoItems'] = $promoItems ?: [
-            ['title' => 'Diskon 20% Produk Lokal', 'type' => 'PROMO', 'location' => 'Sangatta', 'date' => '12 Sep 2026', 'badge' => 'Promo'],
-            ['title' => 'Pameran UMKM Kutim', 'type' => 'ACARA', 'location' => 'Kota', 'date' => '20 Sep 2026', 'badge' => 'Event'],
-            ['title' => 'Bazar Kuliner Mingguan', 'type' => 'PROMO', 'location' => 'Muara Wahau', 'date' => '27 Sep 2026', 'badge' => 'Setiap minggu'],
+            ['title' => 'Diskon 20% Produk Lokal', 'type' => 'PROMO', 'location' => 'Sangatta', 'date' => '12 Sep 2026', 'badge' => 'Promo', 'shop' => 'Kopi Lestari', 'description' => 'Nikmati diskon spesial untuk produk lokal pilihan dari Kopi Lestari.', 'image' => asset('umkm.png'), 'url' => route('preview.mobile.umkm.detail', ['slug' => 'kopi-lestari'])],
+            ['title' => 'Pameran UMKM Kutim', 'type' => 'ACARA', 'location' => 'Kota', 'date' => '20 Sep 2026', 'badge' => 'Event', 'shop' => 'UMKM Kutim', 'description' => 'Festival produk lokal dan kuliner yang menampilkan UMKM unggulan kota.', 'image' => asset('umkm.png'), 'url' => route('preview.mobile.umkm')],
+            ['title' => 'Bazar Kuliner Mingguan', 'type' => 'PROMO', 'location' => 'Muara Wahau', 'date' => '27 Sep 2026', 'badge' => 'Setiap minggu', 'shop' => 'Anyam Rasa', 'description' => 'Promo mingguan produk lokal yang relevan untuk kebutuhan harianmu.', 'image' => asset('umkm.png'), 'url' => route('preview.mobile.umkm.detail', ['slug' => 'anyam-rasa'])],
         ];
 
         return view('mobile.promo', $data);

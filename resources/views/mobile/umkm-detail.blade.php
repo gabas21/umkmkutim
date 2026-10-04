@@ -141,6 +141,36 @@
                     </div>
                 </section>
 
+                @php
+                    $mapQuery = null;
+                    if (! empty($detail['latitude']) && ! empty($detail['longitude'])) {
+                        $mapQuery = $detail['latitude'] . ',' . $detail['longitude'];
+                    } elseif (! empty($detail['alamat'])) {
+                        $mapQuery = trim($detail['alamat'] . ' ' . ($detail['kecamatan'] ?? ''));
+                    }
+                @endphp
+
+                @if(! empty($mapQuery))
+                    <section class="mb-4 card-soft overflow-hidden rounded-[24px]">
+                        <div class="flex items-center justify-between gap-2 px-4 pt-4">
+                            <h3 class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Lokasi usaha</h3>
+                            <a href="https://www.google.com/maps/search/?api=1&query={{ rawurlencode($mapQuery) }}" target="_blank" rel="noopener noreferrer" class="text-[10px] font-bold uppercase tracking-[0.12em] text-brand-700">
+                                Buka maps
+                            </a>
+                        </div>
+                        <div class="mt-3 overflow-hidden rounded-b-[24px]">
+                            <iframe
+                                src="https://www.google.com/maps?q={{ rawurlencode($mapQuery) }}&z=15&output=embed"
+                                class="h-52 w-full border-0"
+                                loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade"
+                                allowfullscreen
+                                aria-label="Peta lokasi {{ $detail['nama_usaha'] ?? 'UMKM' }}">
+                            </iframe>
+                        </div>
+                    </section>
+                @endif
+
                 <section class="mb-4 card-soft rounded-[24px] p-4">
                     <h3 class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Produk unggulan</h3>
                     <div class="mt-3 flex flex-wrap gap-2">
@@ -174,6 +204,17 @@
                     </section>
                 @endif
 
+                @if(! empty($detail['promo']))
+                    <section class="mb-4 overflow-hidden rounded-[24px] border border-amber-200 bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-100 p-4 shadow-soft">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="rounded-full bg-amber-500 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-white">Promo</span>
+                            <span class="text-[10px] font-bold uppercase tracking-[0.12em] text-amber-700">{{ $detail['promo']['label'] ?? 'Spesial' }}</span>
+                        </div>
+                        <h3 class="mt-3 text-base font-black text-slate-900">{{ $detail['promo']['title'] ?? 'Promo UMKM' }}</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-700">{{ $detail['promo']['description'] ?? 'Nikmati promo spesial dari usaha lokal ini.' }}</p>
+                    </section>
+                @endif
+
                 @if(! empty($catalogProducts))
                     <section class="mb-4 card-soft rounded-[24px] p-4">
                         <div class="flex items-center justify-between gap-3">
@@ -186,6 +227,8 @@
                                     class="product-card overflow-hidden rounded-[20px] border border-slate-100 bg-white text-left shadow-sm"
                                     data-name="{{ $product['name'] }}"
                                     data-price="{{ $product['price'] }}"
+                                    data-original-price="{{ $product['original_price'] ?? $product['price'] }}"
+                                    data-discounted="{{ ! empty($product['discounted']) ? '1' : '0' }}"
                                     data-description="{{ $product['description'] }}"
                                     data-image="{{ !empty($product['image']) ? $product['image'] : (route('placeholder.image', ['category' => $product['category'] ?? $detail['kategori']['nama'] ?? 'Produk']) . '?label=' . urlencode($product['name'])) }}"
                                     data-badge="{{ $product['badge'] }}"
@@ -201,7 +244,15 @@
                                     <div class="p-3">
                                         <p class="line-clamp-2 text-sm font-black leading-tight text-slate-900">{{ $product['name'] }}</p>
                                         <div class="mt-2 space-y-1.5">
-                                            <p class="text-[11px] font-semibold text-brand-700">{{ $product['price'] }}</p>
+                                            @if(! empty($product['discounted']))
+                                                <div class="flex items-center gap-2">
+                                                    <p class="text-[10px] font-medium text-slate-400 line-through">{{ $product['original_price'] }}</p>
+                                                    <span class="rounded-full bg-amber-100 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.08em] text-amber-700">Promo</span>
+                                                </div>
+                                                <p class="text-[11px] font-black text-brand-700">{{ $product['price'] }}</p>
+                                            @else
+                                                <p class="text-[11px] font-semibold text-brand-700">{{ $product['price'] }}</p>
+                                            @endif
                                             <div class="flex items-center justify-between gap-2 pt-1">
                                                 <p class="text-[9px] font-medium text-slate-400">Jumlah</p>
                                                 <div class="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-1.5 py-1">
@@ -446,6 +497,8 @@
                     currentProduct = {
                         name: card.dataset.name || 'Produk UMKM',
                         price: card.dataset.price || 'Rp 0',
+                        originalPrice: card.dataset.originalPrice || card.dataset.price || 'Rp 0',
+                        discounted: card.dataset.discounted === '1',
                         description: card.dataset.description || 'Detail produk belum tersedia.',
                         image: card.dataset.image || '{{ asset('umkm.png') }}',
                         badge: card.dataset.badge || 'Produk',
@@ -456,7 +509,9 @@
                     modalImage.alt = currentProduct.name;
                     modalBadge.textContent = currentProduct.category;
                     modalName.textContent = currentProduct.name;
-                    modalPrice.textContent = formatPrice(currentProduct.price);
+                    modalPrice.innerHTML = currentProduct.discounted
+                        ? '<span class="mr-2 text-xs font-medium text-slate-400 line-through">' + currentProduct.originalPrice + '</span><span class="font-bold text-brand-700">' + formatPrice(currentProduct.price) + '</span>'
+                        : formatPrice(currentProduct.price);
                     modalDescription.textContent = currentProduct.description;
 
                     modal.classList.remove('hidden');
@@ -489,26 +544,6 @@
             clearCartButton.addEventListener('click', () => {
                 cart.clear();
                 renderCart();
-            });
-
-            cartItems.addEventListener('click', (event) => {
-                const button = event.target.closest('button[data-action]');
-                if (!button) {
-                    return;
-                }
-
-                const { action, name } = button.dataset;
-                if (!name || !action) {
-                    return;
-                }
-
-                if (action === 'increase') {
-                    changeCartItem(name, 1);
-                }
-
-                if (action === 'decrease') {
-                    changeCartItem(name, -1);
-                }
             });
 
             closeButton.addEventListener('click', closeModal);
